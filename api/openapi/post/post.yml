@@ -1,0 +1,486 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: ShopEase <service Post> API
+  description: OpenApi 3.0 для сервиса post сайта ShopEase.
+servers:
+  - url: https://{hostname}/api
+    variables:
+      hostname:
+        default: localhost
+paths:
+  /api/v1/post:
+    post:
+      summary: Создать новое объявление.
+      operationId: createPost
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePost'
+      responses:
+        '201':
+          description: Объявление успешно создано.
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: ID объявления.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+    get:
+        summary: Возврат массива постов.
+        operationId: GetMiniPost
+        parameters:
+          - name: offset
+            in: query
+            description: Количество объектов пропущеных в результирующей выборке.
+            required: true
+            schema:
+              type: integer
+          - name: limit
+            in: query
+            description: Количество возврощаемых объектов
+            required: true
+            schema:
+              type: integer
+          - name: status
+            in: query
+            description: Статус.
+            required: false
+            schema:
+              type: boolean
+          - name: sort
+            in: query
+            description: Метод сортировки.
+            required: false
+            schema:
+              type: string
+          - name: user
+            in: query
+            description: ID пользоввателя.
+            required: false
+            schema:
+              type: string
+          - name: tag
+            in: query
+            description: Тег.
+            required: false
+            schema:
+              type: string
+        responses:
+          '200':
+            description: Объявления получены.
+            content:
+              application/json:
+                 schema:
+                  type: array
+                  items:
+                    oneOf:
+                      - $ref: '#/components/schemas/MiniPost'
+          '204':
+            description: Все объявления просмотрены.
+          default:
+            description: Произошла ошибка.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorHTTP'
+  /api/v1/post/{id}:
+    get:
+      summary: Вернуть объявление по id.
+      operationId: GetIdPost
+      parameters:
+        - name: id
+          in: path
+          description: ID объявления.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Объявление получено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullPost'
+        '404':
+          description: Данного объявления не существует.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+    patch:
+      summary: Обновить объявление.
+      operationId: updatePost
+      security:
+      - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID объявления.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditPost'
+      responses:
+        '204':
+          description: Объявление успешно обновлено.
+        '404':
+          description: Данного объявления не существует.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+    delete:
+      summary: Удалить объявление.
+      operationId: deletePost
+      security:
+      - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID объявления.
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Пользователь удалён.
+        '404':
+          description: Данного объявления не существует.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+                
+  /api/v1/cart:
+    get:
+      summary: Вернуть объявления из корзины.
+      operationId: getCart
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Объявления получено.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: '#/components/schemas/MiniPost'
+        '204':
+            description: Корзина пуста.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+  
+  /api/v1/cart/{id}:
+    post:
+      summary: Добавить в корзину.
+      operationId: addCart
+      security:
+      - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Id товара.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Объявление добавленно.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+                
+    delete:
+      summary: Удалить из корзины товар.
+      operationId: removeCart
+      security:
+      - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Id товара.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Объявление удаленно.
+        '204':
+            description: Такого товара нет в корзине.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+                
+  /api/v1/favorite:
+    get:
+      summary: Вернуть избранное.
+      operationId: getFavorite
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Объявления получено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiniPost'
+        '204':
+            description: В избранном пусто.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'              
+                
+                
+  /api/v1/favorite/{id}:
+    post:
+      summary: Добавить в избранное.
+      operationId: addFavorite
+      security:
+      - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Id товара.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Объявление добавленно.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+                
+    delete:
+      summary: Удалить из избранных товар.
+      operationId: removeFavorite
+      security:
+      - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Id товара.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Объявление удаленно.
+        '204':
+            description: Такого объявления не существует.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+
+  /api/v1/search:
+    get:
+      summary: Поиск.
+      operationId: search
+      parameters:
+          - name: query
+            in: query
+            description: Запрос
+            required: true
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Объявление добавленно.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiniPost'
+        '204':
+            description: Ничего не найдено по данному запросу.
+        default:
+          description: Произошла ошибка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorHTTP'
+
+components:
+  schemas:
+    MiniPost:
+      allOf:
+        - required:
+            - UserId
+            - Title
+            - PostId
+            - Views
+            - Price
+            - PathImages
+          properties:
+            UserId:
+              type: string
+              description: ID пользователя.
+            PostId:
+              type: string
+              description: ID объявления.
+            Title:
+              type: string
+              description: Названия объявления.
+            Views:
+              type: integer
+              description: Количество просмотров.
+            Price:
+              type: string
+              description: Цена объявления.
+            PathImages:
+              type: array
+              items:
+                type: string
+                description: Изображение.
+        
+    FullPost:
+      allOf:
+        - required:
+            - UserId
+            - Title
+            - Description
+            - Price
+            - Category
+            - Status
+            - Views
+            - PathImages
+          properties:
+            UserId:
+              type: string
+              description: Id пользователя.
+            Title:
+              type: string
+              description: Названия объявления.
+            Description:
+              type: string
+              description: Содержание объявления.
+            Views:
+              type: integer
+              description: Количество просмотров.
+            Price:
+              type: string
+              description: Цена объявления.
+            Category:
+              type: string
+              description: Категория.
+            Status:
+              type: boolean
+              description: Закрыто ли объявление.
+            PathImages:
+              type: array
+              items:
+                type: string
+                description: Изображение.
+  
+  
+    CreatePost:
+      allOf:
+        - required:
+            - Title
+            - Description
+            - Price
+            - Category
+            - PathImages
+          properties:
+            Title:
+              type: string
+              description: Названия объявления.
+            Description:
+              type: string
+              description: Содержание объявления.
+            Price:
+              type: string
+              description: Цена объявления.
+            Category:
+              type: string
+              description: Категория.
+            PathImages:
+              type: array
+              items:
+                type: string
+                description: Изображение.
+                
+    EditPost:
+      allOf:
+        - properties:
+            Title:
+              type: string
+              description: Названия объявления.
+            Description:
+              type: string
+              description: Содержание объявления.
+            Price:
+              type: string
+              description: Цена объявления.
+            Category:
+              type: string
+              description: Категория.
+            Status:
+              type: boolean
+              description: Закрыто ли объявление.
+            PathImages:
+              type: array
+              items:
+                type: string
+                description: Изображение.
+                
+
+    ErrorHTTP:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Error code
+        message:
+          type: string
+          description: Error message
+          
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

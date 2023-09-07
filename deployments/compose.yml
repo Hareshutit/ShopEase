@@ -1,0 +1,118 @@
+version: "3.9"
+services:
+
+  nginx:
+    image: nginx
+    build: ./nginx
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    ports:
+      - 80:80
+    depends_on:
+      - auth-service
+      - user-service
+      - post-service
+    networks:
+      - shopease-service
+
+  post-service:
+    container_name: "post_service"
+    build: 
+      context: ../
+      dockerfile: ./deployments/post/Dockerfile
+    expose:
+      - "8083"
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+      redis-cart:
+        condition: service_healthy
+    networks:
+      - postgres-post-network
+      - shopease-service
+
+  auth-service:
+    container_name: "auth_service"
+    build: 
+      context: ../
+      dockerfile: ./deployments/auth/Dockerfile
+    expose:
+      - "8082"
+      - "8085"
+    networks:
+      - shopease-service
+
+  user-service:
+    container_name: "user_service"
+    build: 
+      context: ../
+      dockerfile: ./deployments/user/Dockerfile
+    expose:
+      - "8080"
+      - "8081"
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+    networks:
+      - postgres-user-network
+      - shopease-service
+
+  postgres-user:
+    container_name: "postgres_user"
+    image: postgres
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: "user"
+      POSTGRES_USER: "shopease"
+      POSTGRES_PASSWORD: "uniq123"
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U shopease -d user"]
+        interval: 4s
+        timeout: 3s
+        retries: 5
+    volumes:
+      - ./user/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - postgres-user-network
+  
+  redis-cart:
+    container_name: "redis_cart"
+    image: redis
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+    networks:
+      - postgres-post-network
+
+  postgres-post:
+    container_name: "postgres_post"
+    image: postgres
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: "post"
+      POSTGRES_USER: "shopease"
+      POSTGRES_PASSWORD: "uniq123"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopease -d post"]
+      interval: 4s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./post/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - postgres-post-network
+
+
+networks:
+  shopease-service:
+    name: shopease-service
+    driver: bridge  
+  postgres-user-network:
+    name: postgres-user-network
+    driver: bridge
+  postgres-post-network:
+    name: postgres-post-network
+    driver: bridge

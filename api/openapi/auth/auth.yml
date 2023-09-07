@@ -1,0 +1,81 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: ShopEase <service Auth> API
+  description: OpenApi 3.0 для сервиса post сайта ShopEase.
+servers:
+  - url: https://{hostname}/api
+    variables:
+      hostname:
+        default: localhost
+paths:
+  /api/auth/login:
+      post:
+        summary: Вход в аккаунт.
+        operationId: login
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUp'
+        responses:
+          '200':
+            description: Успешная авторизация.
+            content:
+              application/json:
+                 schema:
+                  $ref: '#/components/schemas/JsonWebToken'
+  
+          default:
+            description: Произошла ошибка.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorHTTP'
+  
+
+
+components:
+  schemas:
+    SignUp:
+      allOf:
+        - required:
+            - Login
+            - Password
+          properties:
+            Login:
+              type: string
+              description: Логин.
+            Password:
+              type: string
+              description: Пароль.
+              
+            
+
+    ErrorHTTP:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Error code
+        message:
+          type: string
+          description: Error message
+          
+    JsonWebToken:
+      description: JWT иокен
+      type: string
+      format: application/json
+      pattern: ^([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_\-\+\/=]+)$
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          
+          
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

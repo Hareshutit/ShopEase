@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+
+// export PATH="$PATH:$(go env GOPATH)/bin"
+//protoc --go_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=paths=source_relative *.proto  
+option go_package = "./;delivery";
+
+package delivery;
+
+message Id {
+  string id = 1;
+}
+
+message UuidAuth {
+  string Value = 1;
+}
+
+// grpc-сервис пользователя
+service Auth {
+    rpc GenerateAccessToken (Id) returns (UuidAuth) {}
+}

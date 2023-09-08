@@ -1,4 +1,4 @@
-CREATE TABLE posts (
+CREATE TABLE Post (
     Id uuid PRIMARY KEY,
     UserId uuid NOT NULL,
     "close" boolean NOT NULL,
@@ -8,14 +8,13 @@ CREATE TABLE posts (
     Tags   text NOT NULL,
     Images text[] NOT NULL,
     "time" timestamp NOT NULL,
-    Views integer,
-    fts   TSVECTOR
 );
 
 
-CREATE TABLE favorite (
-    IdPost uuid[],
-    UserId uuid PRIMARY KEY
+CREATE TABLE Views (
+    Count id,
+    PostId uuid PRIMARY KEY,
+    Id 
 );
 
 

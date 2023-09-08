@@ -30,33 +30,3 @@ func (h *CreateHandler) Handle(
 	code, err := h.postRepo.Create(ctx, postDelivery)
 	return *postDelivery.Id, code, err
 }
-
-type AddCartHandler struct {
-	cartRepo  domain.CUDCartRepository
-	validator domain.SpecificationManager
-	loger     *logrus.Entry
-}
-
-func (h *AddCartHandler) Handle(
-	ctx context.Context,
-	userId uuid.UUID,
-	postId uuid.UUID,
-) (int, error) {
-	code, err := h.cartRepo.Add(ctx, userId, postId)
-	return code, err
-}
-
-type AddFavoriteHandler struct {
-	postRepo  domain.CUDRepository
-	validator domain.SpecificationManager
-	loger     *logrus.Entry
-}
-
-func (h *AddFavoriteHandler) Handle(
-	ctx context.Context,
-	userId uuid.UUID,
-	postId uuid.UUID,
-) (int, error) {
-	code, err := h.postRepo.AddFavorite(ctx, userId, postId)
-	return code, err
-}

@@ -20,24 +20,6 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Вернуть объявления из корзины.
-	// (GET /api/v1/cart)
-	GetCart(ctx echo.Context) error
-	// Удалить из корзины товар.
-	// (DELETE /api/v1/cart/{id})
-	RemoveCart(ctx echo.Context, id string) error
-	// Добавить в корзину.
-	// (POST /api/v1/cart/{id})
-	AddCart(ctx echo.Context, id string) error
-	// Вернуть избранное.
-	// (GET /api/v1/favorite)
-	GetFavorite(ctx echo.Context) error
-	// Удалить из избранных товар.
-	// (DELETE /api/v1/favorite/{id})
-	RemoveFavorite(ctx echo.Context, id string) error
-	// Добавить в избранное.
-	// (POST /api/v1/favorite/{id})
-	AddFavorite(ctx echo.Context, id string) error
 	// Возврат массива постов.
 	// (GET /api/v1/post)
 	GetMiniPost(ctx echo.Context, params GetMiniPostParams) error
@@ -53,108 +35,11 @@ type ServerInterface interface {
 	// Обновить объявление.
 	// (PATCH /api/v1/post/{id})
 	UpdatePost(ctx echo.Context, id string) error
-	// Поиск.
-	// (GET /api/v1/search)
-	Search(ctx echo.Context, params SearchParams) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
-}
-
-// GetCart converts echo context to params.
-func (w *ServerInterfaceWrapper) GetCart(ctx echo.Context) error {
-	var err error
-
-	ctx.Set(BearerAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.GetCart(ctx)
-	return err
-}
-
-// RemoveCart converts echo context to params.
-func (w *ServerInterfaceWrapper) RemoveCart(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	ctx.Set(BearerAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.RemoveCart(ctx, id)
-	return err
-}
-
-// AddCart converts echo context to params.
-func (w *ServerInterfaceWrapper) AddCart(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	ctx.Set(BearerAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.AddCart(ctx, id)
-	return err
-}
-
-// GetFavorite converts echo context to params.
-func (w *ServerInterfaceWrapper) GetFavorite(ctx echo.Context) error {
-	var err error
-
-	ctx.Set(BearerAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.GetFavorite(ctx)
-	return err
-}
-
-// RemoveFavorite converts echo context to params.
-func (w *ServerInterfaceWrapper) RemoveFavorite(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	ctx.Set(BearerAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.RemoveFavorite(ctx, id)
-	return err
-}
-
-// AddFavorite converts echo context to params.
-func (w *ServerInterfaceWrapper) AddFavorite(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	ctx.Set(BearerAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.AddFavorite(ctx, id)
-	return err
 }
 
 // GetMiniPost converts echo context to params.
@@ -273,24 +158,6 @@ func (w *ServerInterfaceWrapper) UpdatePost(ctx echo.Context) error {
 	return err
 }
 
-// Search converts echo context to params.
-func (w *ServerInterfaceWrapper) Search(ctx echo.Context) error {
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params SearchParams
-	// ------------- Required query parameter "query" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "query", ctx.QueryParams(), &params.Query)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter query: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Search(ctx, params)
-	return err
-}
-
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -319,53 +186,41 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.GET(baseURL+"/api/v1/cart", wrapper.GetCart)
-	router.DELETE(baseURL+"/api/v1/cart/:id", wrapper.RemoveCart)
-	router.POST(baseURL+"/api/v1/cart/:id", wrapper.AddCart)
-	router.GET(baseURL+"/api/v1/favorite", wrapper.GetFavorite)
-	router.DELETE(baseURL+"/api/v1/favorite/:id", wrapper.RemoveFavorite)
-	router.POST(baseURL+"/api/v1/favorite/:id", wrapper.AddFavorite)
 	router.GET(baseURL+"/api/v1/post", wrapper.GetMiniPost)
 	router.POST(baseURL+"/api/v1/post", wrapper.CreatePost)
 	router.DELETE(baseURL+"/api/v1/post/:id", wrapper.DeletePost)
 	router.GET(baseURL+"/api/v1/post/:id", wrapper.GetIdPost)
 	router.PATCH(baseURL+"/api/v1/post/:id", wrapper.UpdatePost)
-	router.GET(baseURL+"/api/v1/search", wrapper.Search)
 
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"AA==",
+	"H4sIAAAAAAAC/+xYXW8TRxf+K6t538uVbQhXvqMNtKlUEYnQXtBcDN6xPdV6d5kZp40iS/5QVSioqKhS",
+	"q6oF0Uq9XkyWmJg4f+HMP6rOzK4/12FpoUoFV3Fmd8/nc57n7B6QWtiKwoAFSpLqAZG1JmtR8/NDwahi",
+	"26FU+B/1/Wt1Ur15QCIRRkwozuxdVLFGKPbxt8dkTfBI8TAgVQK/QKz7kMAzmOgujPSDEnGJ2o8YqRKp",
+	"BA8apOOSzfmHVmw8gQkcQqK78BxiOIERJA5M4Kn+Tj+AIYwhwcM1prepam61aMNGyhVryRwXP8ORsdiF",
+	"GJ5be5Dk2ksPqBB039gXvMZyLP5prMTFA93hys8z9BvEcARDm7l+UNRgxyWC3W5zwTxSvZlaX6x0Frw7",
+	"a+BCvXY7ux2XXPG4eg+AfwEA1xVV7bzYfoIYjnVX39N9mDgwhlGO0YVob4Whz2jwNmBlMSFEKD7e2dlG",
+	"w4tQqIVejjvzgGOuuaQeihZVpEp4oDYuznzwQLEGExh1i0lJG2sNZZdfhfrUYXY7hn617fvv4fwezlmY",
+	"NyQTW96qxS3PgVOYwFjfN7Ucpo0fr7HzGWdfyVzATDBF/S0kuqf7MMScT3UXJroHL2Gi+/gbhqWcOVhC",
+	"cxqqW5zM0x5k0eWw+6c84K8ah7cOuVCq3BZsvsZYnFMZPgNgm+cfYGln5vCTYmwJRx2XSFZrC672r+Py",
+	"aJFyi1HBxOW2as7+u5px/yef7xDXrppmxM3VWYhNpSJUG5fwoB6upn0tYsHliDsbpYoDh1g0R/cMpw5h",
+	"pHsQO1EoFZ7F8EL3IXauN8PoCpXM1ME2mWRnzhftSmWjJpnY4zXmYNrmhDmXt7eIS/aYkNbvhVKlVMF2",
+	"hBELaMRJlWyYI5dEVDVN3mUa8fLehXKUzlWDmT84UhTDRzSQj5iazh4+K2iLKSakmb8iLTb4gwSOkUZh",
+	"mPYcTvVA30VA6nv6GweGju5CAkd6gEDTfRjprh7o7809LxwY6nvw1GjZsZ1Wjh5vt5nhj4Ca5oT1umQY",
+	"5gwsSrRZ2j6Kya0iq1gWQ5jgWBm43oUYEnhpA19Kb01kPm/xfxzYE8SH7uuB7q2rgMyIdMXwVJtyDP8K",
+	"iYn+EHE40V1bfjPrxzBa6ysUKs/TbMd5NZUskUmem7Y08/YabuB3XHzW2VO0caa5XeySjMJAWna4WKnY",
+	"fTFQLLD6E0U+r5kRKX8p7eo0szfVnTBgqUz9X7A6qZL/lWfvr+X05bU8HS4jc4uSg7SylNqjVTbPajpA",
+	"xOI8lXDuL1Yu5ZDwQySfXE1Y5eKZLY/VadtXr1WGs3KereV5KT420BshQvQdGBtR1HdgBE/hGOKSUQPZ",
+	"brUoLr4EHk4nM9Z9B15CrHu6ByPElimNGWIjLB2XZFy3SHJznw/sjDKpPgi9/TeW8ZyDzqKaIQ90ViB3",
+	"YcmzYl+rcuRTvuTz7y4iRZAFiYNUA6eQ6DtwAhPDDnAEh2a5mJxXaKQCbyZvXtpv7uJszyHnSZaN7uv7",
+	"DqZkaD5Zs+aj8XnJLB9wr2Ob4DPFVlG1ac6LKOcZjTMUhpI9YzDuFVGSMwgtjxke56549x09MP0e6x/g",
+	"xHT8Uu7jPxpMYAmfTUV/mWBOEFE9q/tWWfUAlec/D6Q/bIlgZIGUjx537X615Z1DjFTeWCemXzKKss6i",
+	"nqVE8+7Abl7a8EXhRA/W4srUyuGe1Taqas1VhN2IPHpeaOjNK+v0s28hXc3DUAHhw6qk+jB+JzFZmAof",
+	"TQt1Jhlao2Ivw2Fb+OnLtKyWywfNUCpEWQf1Ft9rqeD0lm+7mF20pU9LRfywRv1mCoTdzl8BAAD//7iF",
+	"23osGgAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -76,16 +76,6 @@ services:
     networks:
       - postgres-user-network
   
-  redis-cart:
-    container_name: "redis_cart"
-    image: redis
-    expose:
-      - "6379"
-    healthcheck:
-      test: ["CMD", "redis-cli","ping"]
-    networks:
-      - postgres-post-network
-
   postgres-post:
     container_name: "postgres_post"
     image: postgres

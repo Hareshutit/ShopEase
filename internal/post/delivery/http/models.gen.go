@@ -117,12 +117,6 @@ type GetMiniPostParams struct {
 	Tag *string `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
-// SearchParams defines parameters for Search.
-type SearchParams struct {
-	// Query Запрос
-	Query string `form:"query" json:"query"`
-}
-
 // CreatePostJSONRequestBody defines body for CreatePost for application/json ContentType.
 type CreatePostJSONRequestBody = CreatePost
 

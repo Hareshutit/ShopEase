@@ -21,31 +21,3 @@ func (h *DeleteHandler) Handle(
 ) (int, error) {
 	return h.postRepo.Delete(ctx, id)
 }
-
-type RemoveCartHandler struct {
-	cartRepo  domain.CUDCartRepository
-	validator domain.SpecificationManager
-	loger     *logrus.Entry
-}
-
-func (h *RemoveCartHandler) Handle(
-	ctx context.Context,
-	userId uuid.UUID,
-	postId uuid.UUID,
-) (int, error) {
-	return h.cartRepo.Remove(ctx, userId, postId)
-}
-
-type RemoveFavoriteHandler struct {
-	postRepo  domain.CUDRepository
-	validator domain.SpecificationManager
-	loger     *logrus.Entry
-}
-
-func (h *RemoveFavoriteHandler) Handle(
-	ctx context.Context,
-	userId uuid.UUID,
-	postId uuid.UUID,
-) (int, error) {
-	return h.postRepo.RemoveFavorite(ctx, userId, postId)
-}

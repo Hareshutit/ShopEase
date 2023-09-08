@@ -19,25 +19,3 @@ func NewGetIdHandler(
 ) GetIdHandler {
 	return GetIdHandler{postRepo: postRepo, loger: loger}
 }
-
-func NewGetCartHandler(
-	cartRepo domain.RCartRepository,
-	postRepository domain.RRepository,
-	loger *logrus.Entry,
-) GetCartHandler {
-	return GetCartHandler{cartRepo: cartRepo, loger: loger}
-}
-
-func NewGetFavoriteHandler(
-	postRepo domain.RRepository,
-	loger *logrus.Entry,
-) GetFavoriteHandler {
-	return GetFavoriteHandler{postRepo: postRepo, loger: loger}
-}
-
-func NewSearchPostHandler(
-	postRepo domain.RRepository,
-	loger *logrus.Entry,
-) SearchPostHandler {
-	return SearchPostHandler{postRepo: postRepo, loger: loger}
-}

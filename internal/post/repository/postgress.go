@@ -21,6 +21,7 @@ func (t PostPostgressRepository) GetIdPost(ctx context.Context,
 	id uuid.UUID) (*domain.Post, int, error) {
 
 	var result domain.Post
+	result.New()
 
 	err := t.posts.QueryRow(`SELECT userid, title, description,
 	views, price, close, tags, images, time FROM posts WHERE id = $1
@@ -46,14 +47,14 @@ func (t PostPostgressRepository) GetIdPost(ctx context.Context,
 func (t PostPostgressRepository) GetMiniPostSortNew(ctx context.Context,
 	par domain.Parameters) ([]domain.Post, int, error) {
 
-	if *par.Offset <= 0 {
+	if *par.Offset < 0 {
 		return nil, http.StatusBadRequest, errors.New("The page number cannot be less than zero")
 	}
 
 	var rows *sql.Rows
 	var err error
-	//SELECT * FROM EMPLOYEE WHERE name = 'Clark' and (dept IS NOT NULL) or name = 'Dave' and (dept IS  NULL);
-	if *par.Sort == "New" || par.Sort == nil {
+
+	if par.Sort == nil {
 		rows, err = t.posts.Query(`SELECT id, userid, title, description, price, images, time 
 		FROM posts
 		WHERE (tags = COALESCE($1, tags) OR $1 IS NULL) AND
@@ -70,9 +71,10 @@ func (t PostPostgressRepository) GetMiniPostSortNew(ctx context.Context,
 	var posts []domain.Post
 
 	for rows.Next() {
-		p := domain.Post{}
-		err = rows.Scan(&p.Id, &p.UserID, &p.Title, &p.Description,
-			&p.Price, pq.Array(&p.PathImages), &p.Time)
+		var p domain.Post
+		p.New()
+		err = rows.Scan(p.Id, p.UserID, p.Title, p.Description,
+			p.Price, pq.Array(p.PathImages), p.Time)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -192,7 +194,7 @@ func (t *PostPostgressRepository) Create(ctx context.Context,
 		description, price, close, tags, images, time, views)
 		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 		post.Id, post.UserID, post.Title, post.Description, post.Price,
-		post.Status, post.Description, pq.Array(post.PathImages), post.Time, 1)
+		true, post.Category, pq.Array(post.PathImages), post.Time, 1)
 
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -205,14 +207,15 @@ func (t *PostPostgressRepository) Update(ctx context.Context,
 	post domain.Post) (int, error) {
 
 	_, err := t.posts.Exec(`update posts set
-	title = CASE WHEN $1 IS NOT NULL THEN $1 ELSE title END,
-	description = CASE WHEN $2 IS NOT NULL THEN $2 ELSE description END,
-	price =  CASE WHEN $3 IS NOT NULL THEN $3 ELSE price END,
-	tags =  CASE WHEN $4 IS NOT NULL THEN $4 ELSE tags END,
-	images = CASE WHEN $5 IS NOT NULL THEN $5 ELSE images END
-	where id = $6 and userid = $7`,
+	title = CASE WHEN $1::text IS NOT NULL THEN $1::text ELSE title END,
+	description = CASE WHEN $2::text IS NOT NULL THEN $2::text ELSE description END,
+	price =  CASE WHEN $3::text IS NOT NULL THEN $3::text ELSE price END,
+	tags =  CASE WHEN $4::text IS NOT NULL THEN $4::text ELSE tags END,
+	close =  CASE WHEN $5::boolean IS NOT NULL THEN $5::boolean ELSE close END,
+	images = CASE WHEN $6::text[] IS NOT NULL THEN $6::text[] ELSE images END
+	where id = $7 and userid = $8`,
 		post.Title, post.Description, post.Price,
-		post.Description, pq.Array(post.PathImages), post.Id, post.UserID)
+		post.Description, post.Status, pq.Array(post.PathImages), post.Id, post.UserID)
 
 	if err != nil {
 		return http.StatusInternalServerError, err

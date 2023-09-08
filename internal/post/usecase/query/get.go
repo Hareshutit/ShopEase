@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/Hareshutit/ShopEase/internal/post/domain"
@@ -20,10 +19,7 @@ func (h GetMiniPostSortNewHandler) Handle(
 	ctx context.Context,
 	postParam domain.Parameters,
 ) ([]domain.Post, int, error) {
-	if *postParam.Sort == "new" {
-		return h.postRepo.GetMiniPostSortNew(ctx, postParam)
-	}
-	return nil, http.StatusBadRequest, errors.New("Invalid sorting type")
+	return h.postRepo.GetMiniPostSortNew(ctx, postParam)
 }
 
 type GetIdHandler struct {

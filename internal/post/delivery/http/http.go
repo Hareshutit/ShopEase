@@ -95,6 +95,7 @@ func (a *HttpServer) UpdatePost(ctx echo.Context, id string) error {
 		UserID:      &uuidUser,
 		Title:       post.Title,
 		Description: post.Description,
+		Status:      post.Status,
 		Price:       post.Price,
 		Category:    post.Category,
 		PathImages:  post.PathImages,
@@ -122,7 +123,7 @@ func (a *HttpServer) DeletePost(ctx echo.Context, id string) error {
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func (a HttpServer) FindPostByID(ctx echo.Context, id string) error {
+func (a HttpServer) GetIdPost(ctx echo.Context, id string) error {
 	uuidPost, err := uuid.Parse(id)
 	if err != nil {
 		return sendPostError(ctx, http.StatusBadRequest, err)
@@ -149,14 +150,14 @@ func (a HttpServer) FindPostByID(ctx echo.Context, id string) error {
 
 func (a HttpServer) GetMiniPost(ctx echo.Context, params GetMiniPostParams) error {
 
-	var uuidUser uuid.UUID
-	var err error
+	var uuidUserPointer *uuid.UUID
 
 	if params.User != nil {
-		uuidUser, err = uuid.Parse(*params.User)
+		uuidUser, err := uuid.Parse(*params.User)
 		if err != nil {
 			return sendPostError(ctx, http.StatusBadRequest, err)
 		}
+		uuidUserPointer = &uuidUser
 	}
 
 	param := domain.Parameters{
@@ -164,7 +165,7 @@ func (a HttpServer) GetMiniPost(ctx echo.Context, params GetMiniPostParams) erro
 		Limit:    &params.Limit,
 		Status:   params.Status,
 		Sort:     params.Sort,
-		UserId:   &uuidUser,
+		UserId:   uuidUserPointer,
 		Category: params.Tag,
 	}
 
@@ -184,6 +185,10 @@ func (a HttpServer) GetMiniPost(ctx echo.Context, params GetMiniPostParams) erro
 			Views:      *post.Views,
 		}
 		result = append(result, p)
+	}
+
+	if result == nil {
+		return ctx.NoContent(http.StatusNoContent)
 	}
 
 	return ctx.JSON(http.StatusOK, result)

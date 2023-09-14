@@ -9,26 +9,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type GetMiniPostSortNewHandler struct {
+type GetMiniObjectHandler struct {
 	postRepo domain.RRepository
 	loger    *logrus.Entry
 }
 
-func (h GetMiniPostSortNewHandler) Handle(
+func (h GetMiniObjectHandler) Handle(
 	ctx context.Context,
 	postParam domain.Parameters,
 ) ([]domain.Post, int, error) {
-	return h.postRepo.GetMiniPostSortNew(ctx, postParam)
+	return h.postRepo.GetMiniObject(ctx, postParam)
 }
 
-type GetIdHandler struct {
+type GetByIdHandler struct {
 	postRepo domain.RRepository
 	loger    *logrus.Entry
 }
 
-func (h GetIdHandler) Handle(
+func (h GetByIdHandler) Handle(
 	ctx context.Context,
 	id uuid.UUID,
 ) (*domain.Post, int, error) {
-	return h.postRepo.GetIdPost(ctx, id)
+	return h.postRepo.GetById(ctx, id)
 }

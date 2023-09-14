@@ -57,7 +57,7 @@ func (a *HttpServer) CreatePost(ctx echo.Context) error {
 		PathImages:  &post.PathImages,
 	}
 
-	uuidPost, code, err := a.command.CreatePost.Handle(context.Background(), postDTO)
+	uuidPost, code, err := a.command.Create.Handle(context.Background(), postDTO)
 	if err != nil {
 		return sendPostError(ctx, code, err)
 	}
@@ -97,7 +97,7 @@ func (a *HttpServer) UpdatePost(ctx echo.Context, id string) error {
 		PathImages:  post.PathImages,
 	}
 
-	code, err := a.command.UpdatePost.Handle(context.Background(), postDTO)
+	code, err := a.command.Update.Handle(context.Background(), postDTO)
 	if err != nil {
 		return sendPostError(ctx, code, err)
 	}
@@ -111,7 +111,7 @@ func (a *HttpServer) DeletePost(ctx echo.Context, id string) error {
 		return sendPostError(ctx, http.StatusBadRequest, err)
 	}
 
-	code, err := a.command.DeletePost.Handle(context.Background(), uuidPost)
+	code, err := a.command.Delete.Handle(context.Background(), uuidPost)
 	if err != nil {
 		return sendPostError(ctx, code, err)
 	}
@@ -125,7 +125,7 @@ func (a HttpServer) GetIdPost(ctx echo.Context, id string) error {
 		return sendPostError(ctx, http.StatusBadRequest, err)
 	}
 
-	resultDTO, code, err := a.query.GetIdPost.Handle(context.Background(), uuidPost)
+	resultDTO, code, err := a.query.GetById.Handle(context.Background(), uuidPost)
 	if err != nil {
 		return sendPostError(ctx, code, err)
 	}
@@ -165,7 +165,7 @@ func (a HttpServer) GetMiniPost(ctx echo.Context, params GetMiniPostParams) erro
 		Category: params.Tag,
 	}
 
-	resultDTO, code, err := a.query.GetMiniPostSortNew.Handle(context.Background(), param)
+	resultDTO, code, err := a.query.GetMiniObject.Handle(context.Background(), param)
 	if err != nil {
 		return sendPostError(ctx, code, err)
 	}

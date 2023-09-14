@@ -4,7 +4,9 @@ import "github.com/Hareshutit/ShopEase/internal/auth/usecase/commands"
 
 // В данном агрегате перечисленны все команды сервиса авторизации
 type Commands struct {
-	CreateToken commands.CreateJWSHandle
+	CreateAccessToken  commands.CreateAccessTokenHandle
+	CreateRefreshToken commands.CreateRefreshTokenHandle
+	UpdateRefreshToken commands.UpdateRefreshTokenHandle
 }
 
 // В данном агрегате перечисленны все запросы сервиса авторизации

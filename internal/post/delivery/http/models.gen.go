@@ -17,7 +17,7 @@ type CreatePost struct {
 	PathImages  []string `json:"PathImages"`
 
 	// Price Цена объявления.
-	Price string `json:"Price"`
+	Price int `json:"Price"`
 
 	// Title Названия объявления.
 	Title string `json:"Title"`
@@ -33,7 +33,7 @@ type EditPost struct {
 	PathImages  *[]string `json:"PathImages,omitempty"`
 
 	// Price Цена объявления.
-	Price *string `json:"Price,omitempty"`
+	Price *int `json:"Price,omitempty"`
 
 	// Status Закрыто ли объявление.
 	Status *bool `json:"Status,omitempty"`
@@ -61,7 +61,7 @@ type FullPost struct {
 	PathImages  []string `json:"PathImages"`
 
 	// Price Цена объявления.
-	Price string `json:"Price"`
+	Price int `json:"Price"`
 
 	// Status Закрыто ли объявление.
 	Status bool `json:"Status"`
@@ -84,7 +84,7 @@ type MiniPost struct {
 	PostId string `json:"PostId"`
 
 	// Price Цена объявления.
-	Price string `json:"Price"`
+	Price int `json:"Price"`
 
 	// Title Названия объявления.
 	Title string `json:"Title"`

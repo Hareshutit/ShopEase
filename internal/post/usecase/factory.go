@@ -20,12 +20,12 @@ func NewUsecase(ctx context.Context, cfg config.Config) (Commands, Queries) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return Commands{
-			CreatePost: command.NewCreateHandler(&postRepository, validator, logger),
-			UpdatePost: command.NewUpdateHandler(&postRepository, validator, logger),
-			DeletePost: command.NewDeleteHandler(&postRepository, validator, logger),
+			Create: command.NewCreateHandler(&postRepository, validator, logger),
+			Update: command.NewUpdateHandler(&postRepository, validator, logger),
+			Delete: command.NewDeleteHandler(&postRepository, validator, logger),
 		},
 		Queries{
-			GetIdPost:          query.NewGetIdHandler(postRepository, logger),
-			GetMiniPostSortNew: query.NewGetMiniPostSortNewHandler(postRepository, logger),
+			GetById:       query.NewGetByIdHandler(postRepository, logger),
+			GetMiniObject: query.NewGetMiniObjectHandler(postRepository, logger),
 		}
 }

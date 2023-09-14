@@ -199,7 +199,7 @@ components:
               type: integer
               description: Количество просмотров.
             Price:
-              type: string
+              type: integer
               description: Цена объявления.
             PathImages:
               type: array
@@ -232,7 +232,7 @@ components:
               type: integer
               description: Количество просмотров.
             Price:
-              type: string
+              type: integer
               description: Цена объявления.
             Category:
               type: string
@@ -263,7 +263,7 @@ components:
               type: string
               description: Содержание объявления.
             Price:
-              type: string
+              type: integer
               description: Цена объявления.
             Category:
               type: string
@@ -284,7 +284,7 @@ components:
               type: string
               description: Содержание объявления.
             Price:
-              type: string
+              type: integer
               description: Цена объявления.
             Category:
               type: string

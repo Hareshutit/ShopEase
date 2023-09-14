@@ -7,13 +7,13 @@ import (
 
 // В данном агрегате перечисленны все команды сервиса объявлений
 type Commands struct {
-	CreatePost command.CreateHandler
-	UpdatePost command.UpdateHandler
-	DeletePost command.DeleteHandler
+	Create command.CreateHandler
+	Update command.UpdateHandler
+	Delete command.DeleteHandler
 }
 
 // В данном агрегате перечисленны все запросы сервиса объявлений
 type Queries struct {
-	GetIdPost          query.GetIdHandler
-	GetMiniPostSortNew query.GetMiniPostSortNewHandler
+	GetById       query.GetByIdHandler
+	GetMiniObject query.GetMiniObjectHandler
 }

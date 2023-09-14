@@ -11,11 +11,12 @@ message Id {
   string id = 1;
 }
 
-message UuidAuth {
-  string Value = 1;
+message Token {
+  string Access = 1;
+  string Refresh = 2;
 }
 
 // grpc-сервис пользователя
 service Auth {
-    rpc GenerateAccessToken (Id) returns (UuidAuth) {}
+    rpc GenerateToken (Id) returns (Token) {}
 }

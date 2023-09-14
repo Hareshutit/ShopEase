@@ -1,6 +1,8 @@
 package domain
 
-type Data struct {
-	Login    string
-	Password string
+type Auth struct {
+	Login    *string
+	Email    *string
+	Password *string
+	Refresh  *string
 }

@@ -1,41 +1,43 @@
 package commands
 
 import (
+	"context"
 	"crypto/ecdsa"
-	"fmt"
+	"time"
 
-	"github.com/lestrrat-go/jwx/jwa"
-	"github.com/lestrrat-go/jwx/jwk"
-	"github.com/lestrrat-go/jwx/jws"
-	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/Hareshutit/ShopEase/internal/auth/domain"
+	"github.com/google/uuid"
 )
 
-type CreateJWSHandle struct {
+type CreateRefreshTokenHandle struct {
+	PrivateKey    *ecdsa.PrivateKey
+	CUDRepository domain.CUDRepository
+}
+
+func (f *CreateRefreshTokenHandle) Create(ctx context.Context, id string) ([]byte, int, error) {
+	claims := make(map[string]any)
+	claims["iss"] = "auth.shopease.com"
+	claims["aud"] = "shopease.com"
+	claims["sub"] = id
+	idToken := uuid.New().String()
+	claims["jti"] = idToken
+	claims["exp"] = time.Now().Unix() + 2592000
+
+	token, code, err := createToken(claims, f.PrivateKey)
+	f.CUDRepository.Create(ctx, id, idToken, token)
+	return token, code, err
+}
+
+type CreateAccessTokenHandle struct {
 	PrivateKey *ecdsa.PrivateKey
-	KeySet     jwk.Set
 }
 
-func (f *CreateJWSHandle) CreateJWSWithClaims(claims map[string]string, audience string, issuer string) ([]byte, error) {
-	t := jwt.New()
-	for tag, claim := range claims {
-		err := t.Set(tag, claim)
-		if err != nil {
-			return nil, fmt.Errorf("setting payload: %w", err)
-		}
-	}
-	return f.SignToken(t)
-}
+func (f *CreateAccessTokenHandle) Create(id string) ([]byte, int, error) {
+	claims := make(map[string]any)
+	claims["iss"] = "auth.shopease.com"
+	claims["aud"] = "shopease.com"
+	claims["sub"] = id
+	claims["exp"] = time.Now().Unix() + 3600
 
-func (f *CreateJWSHandle) SignToken(t jwt.Token) ([]byte, error) {
-	hdr := jws.NewHeaders()
-	if err := hdr.Set(jws.AlgorithmKey, jwa.ES256); err != nil {
-		return nil, fmt.Errorf("setting algorithm: %w", err)
-	}
-	if err := hdr.Set(jws.TypeKey, "JWT"); err != nil {
-		return nil, fmt.Errorf("setting type: %w", err)
-	}
-	if err := hdr.Set(jws.KeyIDKey, `key-id`); err != nil {
-		return nil, fmt.Errorf("setting Key ID: %w", err)
-	}
-	return jwt.Sign(t, jwa.ES256, f.PrivateKey, jwt.WithHeaders(hdr))
+	return createToken(claims, f.PrivateKey)
 }

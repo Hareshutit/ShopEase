@@ -33,6 +33,44 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/ErrorHTTP'
+
+  /api/auth/refresh:
+      post:
+        summary: Обновление access токена.
+        operationId: refresh
+        security:
+        - cookieAuth: []
+        responses:
+          '200':
+            description: Подтверждение авторизации.
+            content:
+              application/json:
+                 schema:
+                  $ref: '#/components/schemas/JsonWebToken'
+  
+          default:
+            description: Произошла ошибка.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorHTTP'
+                  
+  /api/auth/logout:
+      post:
+        summary: Выход из аккаунта.
+        operationId: logout
+        security:
+        - cookieAuth: []
+          bearerAuth: []
+        responses:
+          '200':
+            description: Успешно произведен выход.
+          default:
+            description: Произошла ошибка.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorHTTP'
   
 
 
@@ -67,7 +105,7 @@ components:
           description: Error message
           
     JsonWebToken:
-      description: JWT иокен
+      description: JWT токен
       type: string
       format: application/json
       pattern: ^([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_\-\+\/=]+)$
@@ -79,3 +117,8 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID  # cookie name

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	app "github.com/Hareshutit/ShopEase/internal/auth/usecase"
 
@@ -59,13 +60,53 @@ func (d *HttpServer) Login(ctx echo.Context) error {
 		return sendUserError(ctx, http.StatusBadRequest, "Ошибка логина или паролся")
 	}
 
-	claims := make(map[string]string)
-	claims["id"] = wd.GetValue()
+	accessToken, code, err := d.command.CreateAccessToken.Create(wd.GetValue())
+	if err != nil {
+		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+	}
 
-	result, err := d.command.CreateToken.CreateJWSWithClaims(claims, "appUniqFront", "auth")
+	ctxn := context.TODO()
+
+	refreshToken, code, err := d.command.CreateRefreshToken.Create(ctxn, wd.GetValue())
+	if err != nil {
+		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+	}
+
+	cookie := new(http.Cookie)
+	cookie.Name = "Refresh"
+	cookie.Value = string(refreshToken)
+	cookie.Expires = time.Now().Add(30 * 24 * time.Hour)
+	cookie.SameSite = http.SameSiteStrictMode
+	cookie.Secure = true
+	cookie.HttpOnly = true
+	ctx.SetCookie(cookie)
+
+	return ctx.JSON(http.StatusOK, string(accessToken))
+}
+
+func (d *HttpServer) Refresh(ctx echo.Context) error {
+	cookie, err := ctx.Cookie("Refresh")
 	if err != nil {
 		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
 	}
+	refreshToken := cookie.Value
+	ctxn := context.TODO()
 
-	return ctx.JSON(http.StatusOK, string(result))
+	newRefreshToken, code, err := d.command.UpdateRefreshToken.Update(ctxn, refreshToken)
+	if err != nil {
+		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+	}
+	cookie.Value = string(newRefreshToken)
+
+	accessToken, code, err := d.command.CreateAccessToken.Create(wd.GetValue())
+	if err != nil {
+		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+	}
+
+	return ctx.JSON(http.StatusOK, accessToken)
+}
+
+func (d *HttpServer) Logout(ctx echo.Context) error {
+
+	return ctx.JSON(http.StatusOK, nil)
 }

@@ -45,10 +45,3 @@ func CreatePostgressRepository(cfg config.Config) PostPostgressRepository {
 	db.SetMaxOpenConns(10)
 	return PostPostgressRepository{db}
 }
-
-func CreateRedisRepository(cfg config.Config) CartRedisRepository {
-	pool := newPool(cfg)
-	connect := pool.Get()
-
-	return CartRedisRepository{connect}
-}

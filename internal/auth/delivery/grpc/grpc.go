@@ -2,7 +2,6 @@ package delivery
 
 import (
 	context "context"
-	"fmt"
 
 	app "github.com/Hareshutit/ShopEase/internal/auth/usecase"
 )
@@ -14,15 +13,12 @@ type GrpcServer struct {
 	query   app.Queries
 }
 
-func (g *GrpcServer) GenerateAccessToken(ctx context.Context, in *Id) (*UuidAuth, error) {
-	claims := make(map[string]string)
-	claims["id"] = in.GetId()
+func (g *GrpcServer) GenerateToken(ctx context.Context, in *Id) (*UuidAuth, error) {
 
-	resultByte, err := g.command.CreateToken.CreateJWSWithClaims(claims, "appUniqFront", "auth")
+	resultByte, _, err := g.command.CreateAccessToken.Create(in.Id)
 	if err != nil {
 		return nil, err
 	}
 	result := UuidAuth{Value: string(resultByte)}
-	fmt.Println(result.GetValue())
 	return &result, nil
 }

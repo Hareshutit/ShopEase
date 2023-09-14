@@ -12,7 +12,7 @@ type Post struct {
 	Status      *bool
 	Title       *string
 	Description *string
-	Price       *string
+	Price       *int
 	Category    *string
 	PathImages  *[]string
 	Time        *time.Time
@@ -34,7 +34,7 @@ func (s *Post) New() {
 	s.Status = new(bool)
 	s.Title = new(string)
 	s.Description = new(string)
-	s.Price = new(string)
+	s.Price = new(int)
 	s.Category = new(string)
 	s.PathImages = new([]string)
 	s.Time = new(time.Time)

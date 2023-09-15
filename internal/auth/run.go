@@ -10,7 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	config "github.com/Hareshutit/ShopEase/config/auth"
 	serverGrpc "github.com/Hareshutit/ShopEase/internal/auth/delivery/grpc"
+	"github.com/Hareshutit/ShopEase/internal/auth/repository"
 
 	oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
@@ -64,7 +66,7 @@ func AsyncRunGrpc(server *grpc.Server, lis net.Listener) error {
 	return nil
 }
 
-func Run() {
+func Run(cfg config.Config) {
 	ctx := context.Background()
 
 	swagger, err := v2.GetSwagger()
@@ -79,7 +81,9 @@ func Run() {
 		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
 		os.Exit(1)
 	}
-	command, query := usecase.NewUsecase(ctx)
+
+	redisRepo := repository.CreateRedisRepository(cfg)
+	command, query := usecase.NewUsecase(ctx, &redisRepo)
 
 	serverHandler := v2.CreateHttpServer(command, query)
 

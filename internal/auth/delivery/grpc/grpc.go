@@ -13,12 +13,18 @@ type GrpcServer struct {
 	query   app.Queries
 }
 
-func (g *GrpcServer) GenerateToken(ctx context.Context, in *Id) (*UuidAuth, error) {
+func (g *GrpcServer) GenerateToken(ctx context.Context, in *Id) (*Token, error) {
 
-	resultByte, _, err := g.command.CreateAccessToken.Create(in.Id)
+	accessToken, _, err := g.command.CreateAccessToken.Create(in.Id)
 	if err != nil {
 		return nil, err
 	}
-	result := UuidAuth{Value: string(resultByte)}
+
+	ctxn := context.TODO()
+	refreshToken, _, err := g.command.CreateRefreshToken.Create(ctxn, in.Id)
+	if err != nil {
+		return nil, err
+	}
+	result := Token{Access: string(accessToken), Refresh: string(refreshToken)}
 	return &result, nil
 }

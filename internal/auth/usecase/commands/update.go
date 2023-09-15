@@ -15,32 +15,32 @@ type UpdateRefreshTokenHandle struct {
 	CUDRepository domain.CUDRepository
 }
 
-func (f *UpdateRefreshTokenHandle) Update(ctx context.Context, token string) ([]byte, int, error) {
+func (f *UpdateRefreshTokenHandle) Update(ctx context.Context, token string) ([]byte, *string, int, error) {
 	cloneToken, err := jwt.ParseString(token)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, nil, http.StatusInternalServerError, err
 	}
 
 	idUser, ok := cloneToken.Get("sub")
 	if ok != true {
-		return nil, http.StatusBadRequest, fmt.Errorf("Not finding id")
+		return nil, nil, http.StatusBadRequest, fmt.Errorf("Not finding id")
 	}
 	idToken, ok := cloneToken.Get("jti")
 	if ok != true {
-		return nil, http.StatusBadRequest, fmt.Errorf("Not finding idToken")
+		return nil, nil, http.StatusBadRequest, fmt.Errorf("Not finding idToken")
 	}
 
 	sidUser, ok := idUser.(string)
 	if ok != true {
-		return nil, http.StatusBadRequest, fmt.Errorf("Bad id")
+		return nil, nil, http.StatusBadRequest, fmt.Errorf("Bad id")
 	}
 	sidToken, ok := idToken.(string)
 	if ok != true {
-		return nil, http.StatusBadRequest, fmt.Errorf("Bad idToken")
+		return nil, nil, http.StatusBadRequest, fmt.Errorf("Bad idToken")
 	}
 
 	scloneToketn, code, err := sign(cloneToken, f.PrivateKey)
 
 	f.CUDRepository.Update(ctx, sidUser, sidToken, scloneToketn)
-	return scloneToketn, code, err
+	return scloneToketn, &sidUser, code, err
 }

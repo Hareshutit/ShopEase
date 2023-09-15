@@ -76,6 +76,7 @@ func (d *HttpServer) Login(ctx echo.Context) error {
 	cookie.Name = "Refresh"
 	cookie.Value = string(refreshToken)
 	cookie.Expires = time.Now().Add(30 * 24 * time.Hour)
+	cookie.MaxAge = 30 * 24 * 60 * 60 // Время жизни в секундах
 	cookie.SameSite = http.SameSiteStrictMode
 	cookie.Secure = true
 	cookie.HttpOnly = true
@@ -92,21 +93,37 @@ func (d *HttpServer) Refresh(ctx echo.Context) error {
 	refreshToken := cookie.Value
 	ctxn := context.TODO()
 
-	newRefreshToken, code, err := d.command.UpdateRefreshToken.Update(ctxn, refreshToken)
+	newRefreshToken, idUser, code, err := d.command.UpdateRefreshToken.Update(ctxn, refreshToken)
 	if err != nil {
 		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
 	}
-	cookie.Value = string(newRefreshToken)
 
-	accessToken, code, err := d.command.CreateAccessToken.Create(wd.GetValue())
+	accessToken, code, err := d.command.CreateAccessToken.Create(*idUser)
 	if err != nil {
 		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
 	}
+
+	cookie.Value = string(newRefreshToken)
+	ctx.SetCookie(cookie)
 
 	return ctx.JSON(http.StatusOK, accessToken)
 }
 
 func (d *HttpServer) Logout(ctx echo.Context) error {
+	cookie, err := ctx.Cookie("Refresh")
+	if err != nil {
+		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+	}
+	refreshToken := cookie.Value
+	ctxn := context.TODO()
+
+	code, err := d.command.DeleteRefreshToken.Delete(ctxn, refreshToken)
+	if err != nil {
+		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+	}
+
+	cookie.MaxAge = 0
+	ctx.SetCookie(cookie)
 
 	return ctx.JSON(http.StatusOK, nil)
 }

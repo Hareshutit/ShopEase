@@ -61,7 +61,6 @@ paths:
         operationId: logout
         security:
         - cookieAuth: []
-          bearerAuth: []
         responses:
           '200':
             description: Успешно произведен выход.

@@ -7,6 +7,7 @@ type Commands struct {
 	CreateAccessToken  commands.CreateAccessTokenHandle
 	CreateRefreshToken commands.CreateRefreshTokenHandle
 	UpdateRefreshToken commands.UpdateRefreshTokenHandle
+	DeleteRefreshToken commands.DeleteRefreshTokenHandle
 }
 
 // В данном агрегате перечисленны все запросы сервиса авторизации

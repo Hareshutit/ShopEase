@@ -39,8 +39,12 @@ services:
     expose:
       - "8082"
       - "8085"
+    depends_on:
+      redis-auth:
+        condition: service_healthy
     networks:
       - shopease-service
+      - redis-auth-network
 
   user-service:
     container_name: "user_service"
@@ -95,6 +99,23 @@ services:
     networks:
       - postgres-post-network
 
+  redis-auth:
+    container_name: "redis_auth"
+    image: redis
+    expose:
+      - "6379"
+    environment:
+      POSTGRES_DB: "post"
+      POSTGRES_USER: "shopease"
+      POSTGRES_PASSWORD: "uniq123"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 4s
+      timeout: 3s
+      retries: 5
+    networks:
+      - redis-auth-network
+
 
 networks:
   shopease-service:
@@ -105,4 +126,7 @@ networks:
     driver: bridge
   postgres-post-network:
     name: postgres-post-network
+    driver: bridge
+  redis-auth-network:
+    name: redis-auth-network
     driver: bridge

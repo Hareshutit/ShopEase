@@ -18,7 +18,7 @@ func CreateGrcpConfig() GrcpConfig {
 
 func CreateRedisConfig() RedisConfig {
 	return RedisConfig{
-		Host: "localhost",
-		Port: 5432,
+		Host: "redis_auth",
+		Port: 6379,
 	}
 }

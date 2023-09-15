@@ -1,8 +1,12 @@
 package main
 
-import "github.com/Hareshutit/ShopEase/internal/auth"
+import (
+	config "github.com/Hareshutit/ShopEase/config/auth"
+	"github.com/Hareshutit/ShopEase/internal/auth"
+)
 
 func main() {
+	cfg := config.CreateConfig()
 
-	auth.Run()
+	auth.Run(cfg)
 }

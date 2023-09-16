@@ -41,6 +41,9 @@ func (f *UpdateRefreshTokenHandle) Update(ctx context.Context, token string) ([]
 
 	scloneToketn, code, err := sign(cloneToken, f.PrivateKey)
 
-	f.CUDRepository.Update(ctx, sidUser, sidToken, scloneToketn)
+	code, err = f.CUDRepository.Update(ctx, sidUser, sidToken, scloneToketn)
+	if err != nil {
+		return nil, nil, code, err
+	}
 	return scloneToketn, &sidUser, code, err
 }

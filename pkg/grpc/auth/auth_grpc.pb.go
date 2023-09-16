@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Auth_GenerateAccessToken_FullMethodName = "/delivery.Auth/GenerateAccessToken"
+	Auth_GenerateToken_FullMethodName = "/delivery.Auth/GenerateToken"
 )
 
 // AuthClient is the client API for Auth service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthClient interface {
-	GenerateAccessToken(ctx context.Context, in *Id, opts ...grpc.CallOption) (*UuidAuth, error)
+	GenerateToken(ctx context.Context, in *Id, opts ...grpc.CallOption) (*Token, error)
 }
 
 type authClient struct {
@@ -37,9 +37,9 @@ func NewAuthClient(cc grpc.ClientConnInterface) AuthClient {
 	return &authClient{cc}
 }
 
-func (c *authClient) GenerateAccessToken(ctx context.Context, in *Id, opts ...grpc.CallOption) (*UuidAuth, error) {
-	out := new(UuidAuth)
-	err := c.cc.Invoke(ctx, Auth_GenerateAccessToken_FullMethodName, in, out, opts...)
+func (c *authClient) GenerateToken(ctx context.Context, in *Id, opts ...grpc.CallOption) (*Token, error) {
+	out := new(Token)
+	err := c.cc.Invoke(ctx, Auth_GenerateToken_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (c *authClient) GenerateAccessToken(ctx context.Context, in *Id, opts ...gr
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility
 type AuthServer interface {
-	GenerateAccessToken(context.Context, *Id) (*UuidAuth, error)
+	GenerateToken(context.Context, *Id) (*Token, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -58,8 +58,8 @@ type AuthServer interface {
 type UnimplementedAuthServer struct {
 }
 
-func (UnimplementedAuthServer) GenerateAccessToken(context.Context, *Id) (*UuidAuth, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateAccessToken not implemented")
+func (UnimplementedAuthServer) GenerateToken(context.Context, *Id) (*Token, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateToken not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
 
@@ -74,20 +74,20 @@ func RegisterAuthServer(s grpc.ServiceRegistrar, srv AuthServer) {
 	s.RegisterService(&Auth_ServiceDesc, srv)
 }
 
-func _Auth_GenerateAccessToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Auth_GenerateToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Id)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthServer).GenerateAccessToken(ctx, in)
+		return srv.(AuthServer).GenerateToken(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Auth_GenerateAccessToken_FullMethodName,
+		FullMethod: Auth_GenerateToken_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).GenerateAccessToken(ctx, req.(*Id))
+		return srv.(AuthServer).GenerateToken(ctx, req.(*Id))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -100,8 +100,8 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GenerateAccessToken",
-			Handler:    _Auth_GenerateAccessToken_Handler,
+			MethodName: "GenerateToken",
+			Handler:    _Auth_GenerateToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

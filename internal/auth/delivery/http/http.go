@@ -2,10 +2,9 @@ package v2
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	app "github.com/Hareshutit/ShopEase/internal/auth/usecase"
 
@@ -18,15 +17,6 @@ import (
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen --config=../../../../api/openapi/auth/models.cfg.yml ../../../../api/openapi/auth/auth.yml
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen --config=../../../../api/openapi/auth/server.cfg.yml ../../../../api/openapi/auth/auth.yml
 
-func sendUserError(ctx echo.Context, code int, message string) error {
-	userErr := ErrorHTTP{
-		Code:    int32(code),
-		Message: message,
-	}
-	err := ctx.JSON(code, userErr)
-	return err
-}
-
 type HttpServer struct {
 	command app.Commands
 	query   app.Queries
@@ -38,7 +28,7 @@ func (d *HttpServer) Login(ctx echo.Context) error {
 
 	err := ctx.Bind(&data)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, "Неправильный формат запроса")
+		return sendUserError(ctx, http.StatusBadRequest, errors.New("Bad request"))
 	}
 
 	grcpConn, err := grpc.Dial(
@@ -57,29 +47,23 @@ func (d *HttpServer) Login(ctx echo.Context) error {
 	wd, err := sessManager.CheckAccount(context.Background(), &cr)
 
 	if wd.GetValue() == "" {
-		return sendUserError(ctx, http.StatusBadRequest, "Ошибка логина или паролся")
+		return sendUserError(ctx, http.StatusBadRequest, errors.New("Wrong login or password"))
 	}
 
 	accessToken, code, err := d.command.CreateAccessToken.Create(wd.GetValue())
 	if err != nil {
-		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, code, err)
 	}
 
 	ctxn := context.TODO()
 
 	refreshToken, code, err := d.command.CreateRefreshToken.Create(ctxn, wd.GetValue())
 	if err != nil {
-		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, code, err)
 	}
 
 	cookie := new(http.Cookie)
-	cookie.Name = "Refresh"
-	cookie.Value = string(refreshToken)
-	cookie.Expires = time.Now().Add(30 * 24 * time.Hour)
-	cookie.MaxAge = 30 * 24 * 60 * 60 // Время жизни в секундах
-	cookie.SameSite = http.SameSiteStrictMode
-	cookie.Secure = true
-	cookie.HttpOnly = true
+	cookieRefresh(cookie, refreshToken)
 	ctx.SetCookie(cookie)
 
 	return ctx.JSON(http.StatusOK, string(accessToken))
@@ -88,22 +72,22 @@ func (d *HttpServer) Login(ctx echo.Context) error {
 func (d *HttpServer) Refresh(ctx echo.Context) error {
 	cookie, err := ctx.Cookie("Refresh")
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	refreshToken := cookie.Value
 	ctxn := context.TODO()
 
 	newRefreshToken, idUser, code, err := d.command.UpdateRefreshToken.Update(ctxn, refreshToken)
 	if err != nil {
-		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, code, err)
 	}
 
 	accessToken, code, err := d.command.CreateAccessToken.Create(*idUser)
 	if err != nil {
-		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, code, err)
 	}
 
-	cookie.Value = string(newRefreshToken)
+	cookieRefresh(cookie, newRefreshToken)
 	ctx.SetCookie(cookie)
 
 	return ctx.JSON(http.StatusOK, accessToken)
@@ -112,18 +96,18 @@ func (d *HttpServer) Refresh(ctx echo.Context) error {
 func (d *HttpServer) Logout(ctx echo.Context) error {
 	cookie, err := ctx.Cookie("Refresh")
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	refreshToken := cookie.Value
 	ctxn := context.TODO()
 
 	code, err := d.command.DeleteRefreshToken.Delete(ctxn, refreshToken)
 	if err != nil {
-		return sendUserError(ctx, code, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, code, err)
 	}
 
-	cookie.MaxAge = 0
+	cookieClear(cookie)
 	ctx.SetCookie(cookie)
 
-	return ctx.JSON(http.StatusOK, nil)
+	return ctx.NoContent(http.StatusOK)
 }

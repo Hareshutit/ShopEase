@@ -39,6 +39,9 @@ func (f *DeleteRefreshTokenHandle) Delete(ctx context.Context, token string) (in
 		return http.StatusBadRequest, fmt.Errorf("Bad idToken")
 	}
 
-	f.CUDRepository.Delete(ctx, sidUser, sidToken)
+	code, err := f.CUDRepository.Delete(ctx, sidUser, sidToken)
+	if err != nil {
+		return code, err
+	}
 	return http.StatusOK, err
 }

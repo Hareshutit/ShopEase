@@ -13,8 +13,8 @@ import (
 	config "github.com/Hareshutit/ShopEase/config/auth"
 	serverGrpc "github.com/Hareshutit/ShopEase/internal/auth/delivery/grpc"
 	"github.com/Hareshutit/ShopEase/internal/auth/repository"
+	"github.com/lestrrat-go/jwx/jwa"
 
-	oapimiddleware "github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -23,6 +23,7 @@ import (
 	"github.com/Hareshutit/ShopEase/internal/auth/usecase"
 
 	v2 "github.com/Hareshutit/ShopEase/internal/auth/delivery/http"
+	authmiddlevare "github.com/Hareshutit/ShopEase/pkg/middleware"
 )
 
 func AsyncRunHTTP(e *echo.Echo) error {
@@ -66,6 +67,12 @@ func AsyncRunGrpc(server *grpc.Server, lis net.Listener) error {
 	return nil
 }
 
+const PrivateKey = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIN2dALnjdcZaIZg4QuA6Dw+kxiSW502kJfmBN3priIhPoAoGCCqGSM49
+AwEHoUQDQgAE4pPyvrB9ghqkT1Llk0A42lixkugFd/TBdOp6wf69O9Nndnp4+HcR
+s9SlG/8hjB2Hz42v4p3haKWv3uS1C6ahCQ==
+-----END EC PRIVATE KEY-----`
+
 func Run(cfg config.Config) {
 	ctx := context.Background()
 
@@ -83,7 +90,7 @@ func Run(cfg config.Config) {
 	}
 
 	redisRepo := repository.CreateRedisRepository(cfg)
-	command, query := usecase.NewUsecase(ctx, &redisRepo)
+	command, query := usecase.NewUsecase(ctx, &redisRepo, cfg)
 
 	serverHandler := v2.CreateHttpServer(command, query)
 
@@ -93,8 +100,20 @@ func Run(cfg config.Config) {
 
 	e := echo.New()
 
+	instAuth, err := authmiddlevare.NewInstanceAuthenticator(cfg.KeyValue.Refresh, jwa.ES256, "shopease.com", "auth.shopease.com")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
+		os.Exit(1)
+	}
+
+	mw, err := authmiddlevare.CreateMiddlewareRefresh(instAuth, swagger)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
+		os.Exit(1)
+	}
+
 	e.Use(middleware.Logger())
-	e.Use(oapimiddleware.OapiRequestValidator(swagger))
+	e.Use(mw...)
 
 	v2.RegisterHandlers(e, &serverHandler)
 

@@ -24,7 +24,10 @@ func (f *CreateRefreshTokenHandle) Create(ctx context.Context, id string) ([]byt
 	claims["exp"] = time.Now().Unix() + 2592000
 
 	token, code, err := createToken(claims, f.PrivateKey)
-	f.CUDRepository.Create(ctx, id, idToken, token)
+	code, err = f.CUDRepository.Create(ctx, id, idToken, token)
+	if err != nil {
+		return nil, code, err
+	}
 	return token, code, err
 }
 

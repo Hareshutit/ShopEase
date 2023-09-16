@@ -2,9 +2,11 @@ package v2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Hareshutit/ShopEase/internal/user/domain"
 	app "github.com/Hareshutit/ShopEase/internal/user/usecase"
@@ -21,10 +23,10 @@ import (
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen --config=../../../../api/openapi/user/models.cfg.yml ../../../../api/openapi/user/user.yml
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen --config=../../../../api/openapi/user/server.cfg.yml ../../../../api/openapi/user/user.yml
 
-func sendUserError(ctx echo.Context, code int, message string) error {
+func sendUserError(ctx echo.Context, code int, message error) error {
 	userErr := ErrorHTTP{
 		Code:    int32(code),
-		Message: message,
+		Message: message.Error(),
 	}
 	err := ctx.JSON(code, userErr)
 	return err
@@ -41,7 +43,7 @@ func (a *HttpServer) CreateUser(ctx echo.Context) error {
 
 	err := ctx.Bind(&newUser)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, "Неправильный формат запроса")
+		return sendUserError(ctx, http.StatusBadRequest, errors.New("Bad request"))
 	}
 
 	user := domain.User{
@@ -58,7 +60,7 @@ func (a *HttpServer) CreateUser(ctx echo.Context) error {
 
 	uuids, err := a.command.CreateUser.Handle(context.Background(), newUser.PasswordCheck, user)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 
 	grcpConn, err := grpc.Dial(
@@ -76,13 +78,23 @@ func (a *HttpServer) CreateUser(ctx echo.Context) error {
 
 	fmt.Println(cr.GetId())
 
-	wd, err := sessManager.GenerateAccessToken(context.Background(), &cr)
+	wd, err := sessManager.GenerateToken(context.Background(), &cr)
 
-	if wd.GetValue() == "" {
-		return sendUserError(ctx, http.StatusBadRequest, "Ошибка генерации токена")
+	if err != nil {
+		return sendUserError(ctx, http.StatusBadRequest, errors.New("Ошибка генерации токена"))
 	}
 
-	return ctx.JSON(http.StatusCreated, wd.GetValue())
+	cookie := new(http.Cookie)
+	cookie.Name = "Refresh"
+	cookie.Value = string(wd.Refresh)
+	cookie.Expires = time.Now().Add(30 * 24 * time.Hour)
+	cookie.MaxAge = 30 * 24 * 60 * 60 // Время жизни в секундах
+	cookie.SameSite = http.SameSiteStrictMode
+	cookie.Secure = true
+	cookie.HttpOnly = true
+	ctx.SetCookie(cookie)
+
+	return ctx.JSON(http.StatusCreated, wd.GetAccess())
 }
 
 // Handler отвечает за обновление данных пользователя
@@ -91,15 +103,15 @@ func (a *HttpServer) UpdateUser(ctx echo.Context) error {
 
 	err := ctx.Bind(&updateUser)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, "Неправильный формат запроса")
+		return sendUserError(ctx, http.StatusBadRequest, errors.New("Bad request"))
 	}
 
 	headerAuth := ctx.Request().Header.Get("Authorization")
-	id := jwt.ClaimParse(headerAuth, "id")
+	id := jwt.ClaimParse(headerAuth, "sub")
 
 	uuids, err := uuid.Parse(id)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 
 	user := domain.User{
@@ -118,7 +130,7 @@ func (a *HttpServer) UpdateUser(ctx echo.Context) error {
 
 	err = a.command.UpdateUser.Handle(context.Background(), user)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 
 	return nil
@@ -127,15 +139,15 @@ func (a *HttpServer) UpdateUser(ctx echo.Context) error {
 // Handler отвечает за удаление пользователя
 func (a *HttpServer) DeleteUser(ctx echo.Context) error {
 	headerAuth := ctx.Request().Header.Get("Authorization")
-	id := jwt.ClaimParse(headerAuth, "id")
+	id := jwt.ClaimParse(headerAuth, "sub")
 
 	uuids, err := uuid.Parse(id)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	err = a.command.DeleteUser.Handle(context.Background(), uuids) // Значения из авторизации
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	return nil
 }
@@ -144,17 +156,17 @@ func (a *HttpServer) DeleteUser(ctx echo.Context) error {
 func (a HttpServer) GetUser(ctx echo.Context) error {
 	var user domain.User
 	headerAuth := ctx.Request().Header.Get("Authorization")
-	id := jwt.ClaimParse(headerAuth, "id")
+	id := jwt.ClaimParse(headerAuth, "sub")
 
 	uuids, err := uuid.Parse(id)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	fmt.Println(uuids)
 
 	user, err = a.query.GetUser.Handle(context.Background(), uuids)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	result := CreateUser{
 		Name:          user.Name,
@@ -173,11 +185,11 @@ func (a *HttpServer) FindUserByID(ctx echo.Context, id string) error {
 	var user domain.User
 	uuids, err := uuid.Parse(id)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	user, err = a.query.FindByIdUser.Handle(context.Background(), uuids)
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, fmt.Sprintf("%v", err))
+		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
 	result := GetUser{
 		Name:        user.Name,

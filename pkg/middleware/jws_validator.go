@@ -2,11 +2,9 @@ package user
 
 import (
 	"crypto/ecdsa"
-	"fmt"
+	"time"
 
-	"github.com/deepmap/oapi-codegen/pkg/ecdsafile"
 	"github.com/lestrrat-go/jwx/jwa"
-	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
@@ -21,40 +19,23 @@ const KeyID = `key-id`
 const PermissionsClaim = "perm"
 
 type InstanceAuthenticator struct {
-	PrivateKey *ecdsa.PrivateKey
-	KeySet     jwk.Set
+	key      *ecdsa.PrivateKey
+	alg      jwa.SignatureAlgorithm
+	audience string
+	issuer   string
 }
 
-func NewInstanceAuthenticator() (*InstanceAuthenticator, error) {
-	privKey, err := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
-	if err != nil {
-		return nil, fmt.Errorf("loading PEM private key: %w", err)
-	}
-
-	set := jwk.NewSet()
-	pubKey := jwk.NewECDSAPublicKey()
-
-	err = pubKey.FromRaw(&privKey.PublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("parsing jwk key: %w", err)
-	}
-
-	err = pubKey.Set(jwk.AlgorithmKey, jwa.ES256)
-	if err != nil {
-		return nil, fmt.Errorf("setting key algorithm: %w", err)
-	}
-
-	err = pubKey.Set(jwk.KeyIDKey, KeyID)
-	if err != nil {
-		return nil, fmt.Errorf("setting key ID: %w", err)
-	}
-
-	set.Add(pubKey)
-
-	return &InstanceAuthenticator{PrivateKey: privKey, KeySet: set}, nil
+func NewInstanceAuthenticator(key *ecdsa.PrivateKey, alg jwa.SignatureAlgorithm,
+	audience string, issuer string) (*InstanceAuthenticator, error) {
+	return &InstanceAuthenticator{
+		key:      key,
+		alg:      alg,
+		audience: audience,
+		issuer:   issuer,
+	}, nil
 }
 
-func (f *InstanceAuthenticator) ValidateJWS(jwsString string, audience string, issuer string) (jwt.Token, error) {
-	return jwt.Parse([]byte(jwsString), jwt.WithKeySet(f.KeySet),
-		jwt.WithAudience(audience), jwt.WithIssuer(issuer))
+func (f *InstanceAuthenticator) ValidateJWS(jwsString string) (jwt.Token, error) {
+	return jwt.Parse([]byte(jwsString), jwt.WithVerify(f.alg, f.key),
+		jwt.WithAudience(f.audience), jwt.WithIssuer(f.issuer), jwt.WithClock(jwt.ClockFunc(time.Now)))
 }

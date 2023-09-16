@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/Hareshutit/ShopEase/internal/post/usecase"
+	"github.com/deepmap/oapi-codegen/pkg/ecdsafile"
+	"github.com/lestrrat-go/jwx/jwa"
 
 	config "github.com/Hareshutit/ShopEase/config/post"
 
@@ -44,6 +46,12 @@ func AsyncRunHTTP(e *echo.Echo, cfg config.Config) error {
 	return e.Shutdown(ctx)
 }
 
+const PrivateKey = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIN2dALnjdcZaIZg4QuA6Dw+kxiSW502kJfmBN3priIhPoAoGCCqGSM49
+AwEHoUQDQgAE4pPyvrB9ghqkT1Llk0A42lixkugFd/TBdOp6wf69O9Nndnp4+HcR
+s9SlG/8hjB2Hz42v4p3haKWv3uS1C6ahCQ==
+-----END EC PRIVATE KEY-----`
+
 func Run(cfg config.Config) {
 
 	ctx := context.Background()
@@ -61,13 +69,14 @@ func Run(cfg config.Config) {
 
 	e := echo.New()
 
-	fa, err := authmiddlevare.NewInstanceAuthenticator()
+	aprivatekey, _ := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
+	instAuth, err := authmiddlevare.NewInstanceAuthenticator(aprivatekey, jwa.ES256, "shopease.com", "auth.shopease.com")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
 		os.Exit(1)
 	}
 
-	mw, err := authmiddlevare.CreateMiddleware(fa, swagger, "shopeaseFrontend", "shopeaseUser")
+	mw, err := authmiddlevare.CreateMiddlewareAccess(instAuth, swagger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
 		os.Exit(1)

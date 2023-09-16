@@ -15,25 +15,32 @@ import (
 )
 
 type JWSValidator interface {
-	ValidateJWS(jws string, audience string, issuer string) (jwt.Token, error)
+	ValidateJWS(jws string) (jwt.Token, error)
 }
 
 var (
 	ErrNoAuthHeader      = errors.New("Authorization header is missing")
+	ErrInvalidCookie     = errors.New("Authorization cookie is invalid")
 	ErrInvalidAuthHeader = errors.New("Authorization header is malformed")
 	ErrClaimsInvalid     = errors.New("Provided claims do not match expected scopes")
 )
 
-func NewAuthenticator(v JWSValidator, audience string, issuer string) openapi3filter.AuthenticationFunc {
+func NewAuthenticatorAccess(v JWSValidator) openapi3filter.AuthenticationFunc {
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-		return Authenticate(v, ctx, input, audience, issuer)
+		return AuthenticateAccess(v, ctx, input)
 	}
 }
 
-func Authenticate(v JWSValidator, ctx context.Context,
-	input *openapi3filter.AuthenticationInput, audience string, issuer string) error {
+func NewAuthenticatorRefresh(v JWSValidator) openapi3filter.AuthenticationFunc {
+	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+		return AuthenticateRefresh(v, ctx, input)
+	}
+}
 
-	//fmt.Println(input.SecuritySchemeName)
+func AuthenticateAccess(v JWSValidator, ctx context.Context,
+	input *openapi3filter.AuthenticationInput) error {
+
+	//fmt.Println(input.SecuritySchemeName)cookieAuth
 	if input.SecuritySchemeName != "bearerAuth" {
 		return fmt.Errorf("security scheme %s != 'bearerAuth'", input.SecuritySchemeName)
 	}
@@ -43,7 +50,28 @@ func Authenticate(v JWSValidator, ctx context.Context,
 		return fmt.Errorf("getting jws: %w", err)
 	}
 
-	_, err = v.ValidateJWS(jws, audience, issuer)
+	_, err = v.ValidateJWS(jws)
+	if err != nil {
+		return fmt.Errorf("validating JWS: %w", err)
+	}
+
+	return nil
+}
+
+func AuthenticateRefresh(v JWSValidator, ctx context.Context,
+	input *openapi3filter.AuthenticationInput) error {
+
+	//fmt.Println(input.SecuritySchemeName)cookieAuth
+	if input.SecuritySchemeName != "cookieAuth" {
+		return fmt.Errorf("security scheme %s != 'cookieAuth'", input.SecuritySchemeName)
+	}
+
+	jws, err := GetJWSFromCookie(input.RequestValidationInput.Request)
+	if err != nil {
+		return fmt.Errorf("getting jws: %w", err)
+	}
+
+	_, err = v.ValidateJWS(jws)
 	if err != nil {
 		return fmt.Errorf("validating JWS: %w", err)
 	}
@@ -65,12 +93,34 @@ func GetJWSFromRequest(req *http.Request) (string, error) {
 	return strings.TrimPrefix(authHdr, prefix), nil
 }
 
-func CreateMiddleware(v JWSValidator, swagger *openapi3.T, audience string, issuer string) ([]echo.MiddlewareFunc, error) {
+func GetJWSFromCookie(req *http.Request) (string, error) {
+	authCook, err := req.Cookie("Refresh")
+
+	if err != nil || authCook.Value == "" {
+		return "", ErrInvalidCookie
+	}
+
+	return authCook.Value, nil
+}
+
+func CreateMiddlewareAccess(v JWSValidator, swagger *openapi3.T) ([]echo.MiddlewareFunc, error) {
 
 	validator := oapimiddleware.OapiRequestValidatorWithOptions(swagger,
 		&oapimiddleware.Options{
 			Options: openapi3filter.Options{
-				AuthenticationFunc: NewAuthenticator(v, audience, issuer),
+				AuthenticationFunc: NewAuthenticatorAccess(v),
+			},
+		})
+
+	return []echo.MiddlewareFunc{validator}, nil
+}
+
+func CreateMiddlewareRefresh(v JWSValidator, swagger *openapi3.T) ([]echo.MiddlewareFunc, error) {
+
+	validator := oapimiddleware.OapiRequestValidatorWithOptions(swagger,
+		&oapimiddleware.Options{
+			Options: openapi3filter.Options{
+				AuthenticationFunc: NewAuthenticatorRefresh(v),
 			},
 		})
 

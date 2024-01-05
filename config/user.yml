@@ -1,0 +1,16 @@
+service: User
+version: v0.6.0
+mode: Release
+config:
+  http:
+    port: 8080
+  grpc:
+    port: 8081
+  database:
+    user:       shopease
+    name:       user
+    password:   uniq123
+    host:       postgres_user
+    port:       5432
+    sslmode:    disable
+  security:

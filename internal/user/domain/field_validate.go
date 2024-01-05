@@ -11,7 +11,7 @@ type SpecificationManager struct {
 	Login       Specification[string]
 	PhoneNumber Specification[string]
 	Password    Specification[string]
-	FirstName   Specification[string]
+	Name        Specification[string]
 	SecondName  Specification[string]
 	Patronimic  Specification[string]
 	Avatar      Specification[string]
@@ -268,11 +268,11 @@ func (e LoginLengthValidation) IsValid(login string) error {
 	return nil
 }
 
-type FirstNameSpecification struct {
+type NameSpecification struct {
 	specifications []Specification[string]
 }
 
-func (e FirstNameSpecification) IsValid(name string) error {
+func (e NameSpecification) IsValid(name string) error {
 	for _, specification := range e.specifications {
 		if err := specification.IsValid(name); err != nil {
 			return err
@@ -281,11 +281,11 @@ func (e FirstNameSpecification) IsValid(name string) error {
 	return nil
 }
 
-type FirstNameAndSpecification struct {
+type NameAndSpecification struct {
 	specifications []Specification[string]
 }
 
-func (e FirstNameAndSpecification) IsValid(name string) error {
+func (e NameAndSpecification) IsValid(name string) error {
 	for _, specification := range e.specifications {
 		if err := specification.IsValid(name); err != nil {
 			return err
@@ -294,99 +294,17 @@ func (e FirstNameAndSpecification) IsValid(name string) error {
 	return nil
 }
 
-type FirstNameLengthValidation struct {
+type NameLengthValidation struct {
 	minLength uint
 	maxLength uint
 }
 
-func (e FirstNameLengthValidation) IsValid(name string) error {
+func (e NameLengthValidation) IsValid(name string) error {
 	if e.minLength < uint(len(name)) && e.maxLength < uint(len(name)) {
-		return FirstNameMaxLengthErr{e.maxLength}
-	}
-	if e.minLength < uint(len(name)) && e.maxLength < uint(len(name)) {
-		return FirstNameMinLengthErr{e.minLength}
-	}
-	return nil
-}
-
-type SecondNameSpecification struct {
-	specifications []Specification[string]
-}
-
-func (e SecondNameSpecification) IsValid(name string) error {
-	for _, specification := range e.specifications {
-		if err := specification.IsValid(name); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type SecondNameAndSpecification struct {
-	specifications []Specification[string]
-}
-
-func (e SecondNameAndSpecification) IsValid(name string) error {
-	for _, specification := range e.specifications {
-		if err := specification.IsValid(name); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type SecondNameLengthValidation struct {
-	minLength uint
-	maxLength uint
-}
-
-func (e SecondNameLengthValidation) IsValid(name string) error {
-	if e.minLength < uint(len(name)) && e.maxLength < uint(len(name)) {
-		return SecondNameMaxLengthErr{e.maxLength}
+		return NameMaxLengthErr{e.maxLength}
 	}
 	if e.minLength < uint(len(name)) && e.maxLength < uint(len(name)) {
-		return SecondNameMinLengthErr{e.minLength}
-	}
-	return nil
-}
-
-type PatronimicSpecification struct {
-	specifications []Specification[string]
-}
-
-func (e PatronimicSpecification) IsValid(name string) error {
-	for _, specification := range e.specifications {
-		if err := specification.IsValid(name); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type PatronimicAndSpecification struct {
-	specifications []Specification[string]
-}
-
-func (e PatronimicAndSpecification) IsValid(name string) error {
-	for _, specification := range e.specifications {
-		if err := specification.IsValid(name); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type PatronimicLengthValidation struct {
-	minLength uint
-	maxLength uint
-}
-
-func (e PatronimicLengthValidation) IsValid(name string) error {
-	if e.minLength <= uint(len(name)) && e.maxLength <= uint(len(name)) {
-		return PatronimicMaxLengthErr{e.maxLength}
-	}
-	if e.minLength <= uint(len(name)) && e.maxLength <= uint(len(name)) {
-		return PatronimicMinLengthErr{e.minLength}
+		return NameMinLengthErr{e.minLength}
 	}
 	return nil
 }

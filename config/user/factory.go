@@ -1,11 +1,24 @@
 package config
 
+import (
+	"fmt"
+	"os"
+
+	"github.com/deepmap/oapi-codegen/pkg/ecdsafile"
+)
+
+const PrivateKey = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIN2dALnjdcZaIZg4QuA6Dw+kxiSW502kJfmBN3priIhPoAoGCCqGSM49
+AwEHoUQDQgAE4pPyvrB9ghqkT1Llk0A42lixkugFd/TBdOp6wf69O9Nndnp4+HcR
+s9SlG/8hjB2Hz42v4p3haKWv3uS1C6ahCQ==
+-----END EC PRIVATE KEY-----`
+
 func CreateConfig() Config {
 	return Config{
-		Http:  CreateHttpConfig(),
-		Grcp:  CreateGrcpConfig(),
-		Db:    CreateDataBaseConfig(),
-		Valid: CreateValidConfig(),
+		Http:          CreateHttpConfig(),
+		Grcp:          CreateGrcpConfig(),
+		Db:            CreateDataBaseConfig(),
+		Authorization: CreateSecurityConfig(),
 	}
 }
 
@@ -28,46 +41,13 @@ func CreateDataBaseConfig() DataBaseConfig {
 	}
 }
 
-func CreateValidConfig() ValidConfig {
-	return ValidConfig{
-		LoginValidate:      CreateLoginConfig(),
-		PasswordValidate:   CreatePasswordConfig(),
-		SecondNameValidate: CreateSecondNameConfig(),
-		FirstNameValidate:  CreateFirstNameConfig(),
-		PatronimicValidate: CreatePatronimicConfig(),
-		AvatarValidate:     CreateAvatarConfig(),
+func CreateSecurityConfig() SecurityConfig {
+	aprivatekey, err := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-}
-
-func CreatePasswordConfig() PasswordConfig {
-	SpecialChar := make(map[rune]bool)
-	SpecialChar['/'] = true
-	SpecialChar['.'] = true
-	SpecialChar[','] = true
-	return PasswordConfig{SpecialChar, 0, 20}
-}
-
-func CreateLoginConfig() LoginConfig {
-	NonAcceptableValues := make(map[rune]bool)
-	NonAcceptableValues['/'] = true
-	NonAcceptableValues['.'] = true
-	NonAcceptableValues[','] = true
-	NonAcceptableValues['@'] = true
-	return LoginConfig{0, 20, NonAcceptableValues}
-}
-
-func CreateSecondNameConfig() SecondNameConfig {
-	return SecondNameConfig{0, 20}
-}
-
-func CreateFirstNameConfig() FirstNameConfig {
-	return FirstNameConfig{0, 20}
-}
-
-func CreatePatronimicConfig() PatronimicConfig {
-	return PatronimicConfig{0, 20}
-}
-
-func CreateAvatarConfig() AvatarConfig {
-	return AvatarConfig{20971520}
+	return SecurityConfig{
+		Verify: &aprivatekey.PublicKey,
+	}
 }

@@ -1,42 +1,38 @@
 package domain
 
-import config "github.com/Hareshutit/ShopEase/config/user"
-
-func CreateSpecificationManager(cfg config.Config) SpecificationManager {
+func CreateSpecificationManager() SpecificationManager {
 	return SpecificationManager{
-		Email:       CreateEmailSpecification(cfg),
-		Login:       CreateLoginSpecification(cfg),
-		PhoneNumber: CreatePhoneNumberSpecification(cfg),
-		Password:    CreatePassSpecification(cfg),
-		FirstName:   CreateFirstNameSpecification(cfg),
-		SecondName:  CreateSecondNameSpecification(cfg),
-		Patronimic:  CreatePatronimicSpecification(cfg),
-		Avatar:      CreateAvatarSpecification(cfg),
+		Email:       CreateEmailSpecification(),
+		Login:       CreateLoginSpecification(),
+		PhoneNumber: CreatePhoneNumberSpecification(),
+		Password:    CreatePassSpecification(),
+		Name:        CreateNameSpecification(),
+		Avatar:      CreateAvatarSpecification(),
 	}
 }
 
-func CreatePassSpecification(cfg config.Config) PassSpecification {
+func CreatePassSpecification() PassSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreatePassAndSpecification(cfg))
+	valid = append(valid, CreatePassAndSpecification())
 	return PassSpecification{valid}
 }
 
-func CreatePassAndSpecification(cfg config.Config) PassAndSpecification {
+func CreatePassAndSpecification() PassAndSpecification {
 	var valid []Specification[string]
-	valid = append(valid, PassLengthValidation{cfg.Valid.PasswordValidate.MaxLength,
-		cfg.Valid.PasswordValidate.MinLength})
-	validFor := CreatePassForRuneValidation(cfg)
-	valid = append(valid, validFor)
+	valid = append(valid, CreatePassLengthValidation(), CreatePassForRuneValidation())
 	return PassAndSpecification{valid}
 }
 
-func CreatePassLengthValidation(cfg config.Config) PassLengthValidation {
-	return PassLengthValidation{cfg.Valid.PasswordValidate.MaxLength,
-		cfg.Valid.PasswordValidate.MinLength}
+func CreatePassLengthValidation() PassLengthValidation {
+	return PassLengthValidation{maxLength: 20, minLength: 8}
 }
 
-func CreatePassForRuneValidation(cfg config.Config) PassForRuneValidation {
-	validspecialCharacters := cfg.Valid.PasswordValidate.SpecialChar
+func CreatePassForRuneValidation() PassForRuneValidation {
+	SpecialChar := make(map[rune]bool)
+	SpecialChar['/'] = true
+	SpecialChar['.'] = true
+	SpecialChar[','] = true
+	validspecialCharacters := SpecialChar
 	validRune := make(map[string]Specification[rune])
 	validRune["SC"] = passSpecialCharactersValidation{validspecialCharacters}
 	validRune["UC"] = passUpperCaseValidation{}
@@ -44,120 +40,92 @@ func CreatePassForRuneValidation(cfg config.Config) PassForRuneValidation {
 	return PassForRuneValidation{validRune}
 }
 
-func CreateEmailSpecification(cfg config.Config) PassSpecification {
+func CreateEmailSpecification() PassSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateEmailAndSpecification(cfg))
+	valid = append(valid, CreateEmailAndSpecification())
 	return PassSpecification{valid}
 }
 
-func CreateEmailAndSpecification(cfg config.Config) PassAndSpecification {
+func CreateEmailAndSpecification() PassAndSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateEmailRequiredValueValidation(cfg))
+	valid = append(valid, CreateEmailRequiredValueValidation())
 	return PassAndSpecification{valid}
 }
 
-func CreateEmailRequiredValueValidation(cfg config.Config) EmailRequiredValueValidation {
+func CreateEmailRequiredValueValidation() EmailRequiredValueValidation {
 	return EmailRequiredValueValidation{}
 }
 
-func CreateLoginSpecification(cfg config.Config) LoginSpecification {
+func CreateLoginSpecification() LoginSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateLoginAndSpecification(cfg))
+	valid = append(valid, CreateLoginAndSpecification())
 	return LoginSpecification{valid}
 }
 
-func CreateLoginAndSpecification(cfg config.Config) LoginAndSpecification {
+func CreateLoginAndSpecification() LoginAndSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateLoginAcceptableValuesValidation(cfg))
-	valid = append(valid, CreateLoginLengthValidation(cfg))
+	valid = append(valid, CreateLoginAcceptableValuesValidation())
+	valid = append(valid, CreateLoginLengthValidation())
 	return LoginAndSpecification{valid}
 }
 
-func CreateLoginAcceptableValuesValidation(cfg config.Config) LoginAcceptableValuesValidation {
-	return LoginAcceptableValuesValidation{cfg.Valid.LoginValidate.NonAcceptableValues}
+func CreateLoginAcceptableValuesValidation() LoginAcceptableValuesValidation {
+	NonAcceptableValues := make(map[rune]bool)
+	NonAcceptableValues['/'] = true
+	NonAcceptableValues['.'] = true
+	NonAcceptableValues[','] = true
+	NonAcceptableValues['@'] = true
+	return LoginAcceptableValuesValidation{NonAcceptableValues}
 }
 
-func CreateLoginLengthValidation(cfg config.Config) LoginLengthValidation {
-	return LoginLengthValidation{cfg.Valid.LoginValidate.MinLength,
-		cfg.Valid.LoginValidate.MaxLength}
+func CreateLoginLengthValidation() LoginLengthValidation {
+	return LoginLengthValidation{minLength: 8, maxLength: 20}
 }
 
-func CreatePhoneNumberSpecification(cfg config.Config) PhoneNumberSpecification {
+func CreatePhoneNumberSpecification() PhoneNumberSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreatePhoneNumberOrSpecification(cfg))
+	valid = append(valid, CreatePhoneNumberOrSpecification())
 	return PhoneNumberSpecification{valid}
 }
 
-func CreatePhoneNumberOrSpecification(cfg config.Config) PhoneNumberAndSpecification {
+func CreatePhoneNumberOrSpecification() PhoneNumberAndSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreatePhoneNumberRussianRequiredValueValidation(cfg))
+	valid = append(valid, CreatePhoneNumberRussianRequiredValueValidation())
 	return PhoneNumberAndSpecification{valid}
 }
 
-func CreatePhoneNumberRussianRequiredValueValidation(cfg config.Config) PhoneNumberRussianRequiredValueValidation {
+func CreatePhoneNumberRussianRequiredValueValidation() PhoneNumberRussianRequiredValueValidation {
 	return PhoneNumberRussianRequiredValueValidation{}
 }
 
-func CreateFirstNameSpecification(cfg config.Config) FirstNameSpecification {
+func CreateNameSpecification() NameSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateFirstNameAndSpecification(cfg))
-	return FirstNameSpecification{valid}
+	valid = append(valid, CreateNameAndSpecification())
+	return NameSpecification{valid}
 }
 
-func CreateFirstNameAndSpecification(cfg config.Config) FirstNameAndSpecification {
+func CreateNameAndSpecification() NameAndSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateFirstNameLengthValidation(cfg))
-	return FirstNameAndSpecification{valid}
+	valid = append(valid, CreateNameLengthValidation())
+	return NameAndSpecification{valid}
 }
 
-func CreateFirstNameLengthValidation(cfg config.Config) FirstNameLengthValidation {
-	return FirstNameLengthValidation{cfg.Valid.FirstNameValidate.MinLength, cfg.Valid.FirstNameValidate.MaxLength}
+func CreateNameLengthValidation() NameLengthValidation {
+	return NameLengthValidation{1, 15}
 }
 
-func CreateSecondNameSpecification(cfg config.Config) SecondNameSpecification {
+func CreateAvatarSpecification() AvatarSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateSecondNameAndSpecification(cfg))
-	return SecondNameSpecification{valid}
-}
-
-func CreateSecondNameAndSpecification(cfg config.Config) SecondNameAndSpecification {
-	var valid []Specification[string]
-	valid = append(valid, CreateSecondNameLengthValidation(cfg))
-	return SecondNameAndSpecification{valid}
-}
-
-func CreateSecondNameLengthValidation(cfg config.Config) SecondNameLengthValidation {
-	return SecondNameLengthValidation{cfg.Valid.SecondNameValidate.MinLength, cfg.Valid.SecondNameValidate.MaxLength}
-}
-
-func CreatePatronimicSpecification(cfg config.Config) PatronimicSpecification {
-	var valid []Specification[string]
-	valid = append(valid, CreatePatronimicAndSpecification(cfg))
-	return PatronimicSpecification{valid}
-}
-
-func CreatePatronimicAndSpecification(cfg config.Config) PatronimicAndSpecification {
-	var valid []Specification[string]
-	valid = append(valid, CreatePatronimicLengthValidation(cfg))
-	return PatronimicAndSpecification{valid}
-}
-
-func CreatePatronimicLengthValidation(cfg config.Config) PatronimicLengthValidation {
-	return PatronimicLengthValidation{cfg.Valid.PatronimicValidate.MinLength, cfg.Valid.PatronimicValidate.MaxLength}
-}
-
-func CreateAvatarSpecification(cfg config.Config) AvatarSpecification {
-	var valid []Specification[string]
-	valid = append(valid, CreateAvatarAndSpecification(cfg))
+	valid = append(valid, CreateAvatarAndSpecification())
 	return AvatarSpecification{valid}
 }
 
-func CreateAvatarAndSpecification(cfg config.Config) AvatarAndSpecification {
+func CreateAvatarAndSpecification() AvatarAndSpecification {
 	var valid []Specification[string]
-	valid = append(valid, CreateAvatarLengthValidation(cfg))
+	valid = append(valid, CreateAvatarLengthValidation())
 	return AvatarAndSpecification{valid}
 }
 
-func CreateAvatarLengthValidation(cfg config.Config) AvatarWeightValidation {
-	return AvatarWeightValidation{cfg.Valid.AvatarValidate.Weigth}
+func CreateAvatarLengthValidation() AvatarWeightValidation {
+	return AvatarWeightValidation{20971520}
 }

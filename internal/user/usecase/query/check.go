@@ -4,13 +4,12 @@ import (
 	"context"
 
 	"github.com/Hareshutit/ShopEase/internal/user/domain"
-
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 type CheckUserHandler struct {
 	userRepo domain.RRepository
-	loger    *logrus.Entry
+	loger    *zerolog.Logger
 }
 
 func (h CheckUserHandler) Handle(

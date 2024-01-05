@@ -1,10 +1,13 @@
 package config
 
+import "crypto/ecdsa"
+
 type Config struct {
-	Http  HttpConfig
-	Grcp  GrcpConfig
-	Db    DataBaseConfig
-	Valid ValidConfig
+	Http          HttpConfig
+	Grcp          GrcpConfig
+	Db            DataBaseConfig
+	Valid         ValidConfig
+	Authorization SecurityConfig
 }
 
 type HttpConfig struct {
@@ -50,4 +53,8 @@ type ImagesConfig struct {
 type TagsConfig struct {
 	MinLength uint
 	MaxLength uint
+}
+
+type SecurityConfig struct {
+	Verify *ecdsa.PublicKey
 }

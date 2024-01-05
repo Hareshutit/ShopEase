@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f compose.yml
+    kompose.version: 1.31.1 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: auth-service
+  name: auth-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: auth-service
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f compose.yml
+        kompose.version: 1.31.1 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/redis-auth-network: "true"
+        io.kompose.network/shopease-service: "true"
+        io.kompose.service: auth-service
+    spec:
+      containers:
+        - image: auth-service
+          name: auth-service
+          ports:
+            - containerPort: 8082
+              protocol: TCP
+            - containerPort: 8085
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}

@@ -11,26 +11,26 @@ import (
 	"time"
 
 	config "github.com/Hareshutit/ShopEase/config/user"
-	"github.com/deepmap/oapi-codegen/pkg/ecdsafile"
 	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/rs/zerolog"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
 
 	"google.golang.org/grpc"
 
 	serverGrpc "github.com/Hareshutit/ShopEase/internal/user/delivery/grpc"
 	v2 "github.com/Hareshutit/ShopEase/internal/user/delivery/http"
+	"github.com/Hareshutit/ShopEase/internal/user/repository"
 	"github.com/Hareshutit/ShopEase/internal/user/usecase"
 	authmiddlevare "github.com/Hareshutit/ShopEase/pkg/middleware"
 )
 
-func AsyncRunHTTP(e *echo.Echo, cfg config.Config) error {
+func AsyncRunHTTP(server *echo.Echo, log zerolog.Logger, cfg config.Config) error {
 	go func() {
-		err := e.Start(fmt.Sprintf("0.0.0.0:%d", cfg.Http.Port))
+		err := server.Start(fmt.Sprintf("0.0.0.0:%d", cfg.Http.Port))
 		if err != nil && err != http.ErrServerClosed {
-			e.Logger.Fatal("shutting down the server")
+			log.Fatal().Err(err).Msg("Shutting down the server")
 		}
 	}()
 
@@ -46,15 +46,19 @@ func AsyncRunHTTP(e *echo.Echo, cfg config.Config) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	return e.Shutdown(ctx)
+	return server.Shutdown(ctx)
 }
 
-func AsyncRunGrpc(server *grpc.Server, lis net.Listener, cfg config.Config) error {
+func AsyncRunGrpc(server *grpc.Server, log zerolog.Logger, cfg config.Config) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Grcp.Port))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error load grpc-server")
+	}
+
 	go func() {
 		err := server.Serve(lis)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
-			os.Exit(1)
+			log.Fatal().Err(err).Msg("Error run grpc-server")
 		}
 	}()
 
@@ -67,67 +71,74 @@ func AsyncRunGrpc(server *grpc.Server, lis net.Listener, cfg config.Config) erro
 	return nil
 }
 
-const PrivateKey = `-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIN2dALnjdcZaIZg4QuA6Dw+kxiSW502kJfmBN3priIhPoAoGCCqGSM49
-AwEHoUQDQgAE4pPyvrB9ghqkT1Llk0A42lixkugFd/TBdOp6wf69O9Nndnp4+HcR
-s9SlG/8hjB2Hz42v4p3haKWv3uS1C6ahCQ==
------END EC PRIVATE KEY-----`
-
-func Run(cfg config.Config) {
+func Run(log zerolog.Logger, cfg config.Config) {
 
 	ctx := context.Background()
 
+	dsn := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%d sslmode=%s",
+		cfg.Db.User, cfg.Db.DataBaseName, cfg.Db.Password, cfg.Db.Host,
+		cfg.Db.Port, cfg.Db.Sslmode)
+
+	Repository := repository.CreatePostgressRepository(dsn, log)
+
+	command, query := usecase.NewUsecase(ctx, Repository, &Repository, log)
+
+	serverHandler := v2.CreateHttpServer(command, query, log)
+
+	grpcHandler := serverGrpc.CreateGrpcServer(command, query, log)
+
+	serverG := grpc.NewServer()
+
+	serverH := echo.New()
+
+	serverH.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogStatus: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			log.Info().
+				Str("URI", v.URI).
+				Int("status", v.Status).
+				Msg("request")
+
+			return nil
+		},
+	}))
+
+	log = log.With().Str("Layer", "Starting").Logger()
+
 	swagger, err := v2.GetSwagger()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка загрузки спецификации swagger\n: %s", err)
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("Error load swagger specification")
 	}
 	swagger.Servers = nil
 
-	lis, err := net.Listen("tcp", ":8081")
+	instAuth, err := authmiddlevare.NewInstanceAuthenticator(cfg.Authorization.Verify, jwa.ES256, "shopease.com", "auth.shopease.com")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
-		os.Exit(1)
-	}
-
-	command, query := usecase.NewUsecase(ctx, cfg)
-
-	serverHandler := v2.CreateHttpServer(command, query)
-
-	grpcHandler := serverGrpc.CreateGrpcServer(command, query)
-
-	server := grpc.NewServer()
-
-	e := echo.New()
-
-	aprivatekey, _ := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
-	instAuth, err := authmiddlevare.NewInstanceAuthenticator(aprivatekey, jwa.ES256, "shopease.com", "auth.shopease.com")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("Error load authenticator")
 	}
 
 	mw, err := authmiddlevare.CreateMiddlewareAccess(instAuth, swagger)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("Error load middleware")
 	}
-	e.Use(middleware.Logger())
-	e.Use(mw...)
 
-	v2.RegisterHandlers(e, &serverHandler)
+	serverH.Use(mw...)
 
-	serverGrpc.RegisterUserServer(server, &grpcHandler)
+	v2.RegisterHandlers(serverH, &serverHandler)
+
+	serverGrpc.RegisterUserServer(serverG, &grpcHandler)
 
 	errs := make(chan error, 2)
+	defer close(errs)
+
 	go func() {
-		errs <- AsyncRunHTTP(e, cfg)
+		errs <- AsyncRunHTTP(serverH, log, cfg)
 	}()
 
 	go func() {
-		errs <- AsyncRunGrpc(server, lis, cfg)
+		errs <- AsyncRunGrpc(serverG, log, cfg)
 	}()
 	err = <-errs
 
-	log.Warn("Terminating aplication:", err)
+	log.Warn().Err(err).Msg("Terminating aplication")
 }

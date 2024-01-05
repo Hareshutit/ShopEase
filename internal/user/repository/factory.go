@@ -2,20 +2,21 @@ package repository
 
 import (
 	"database/sql"
-	"log"
 
 	_ "github.com/jackc/pgx/stdlib"
+	"github.com/rs/zerolog"
 )
 
-func CreatePostgressRepository(dsn string) UserPostgressRepository {
+func CreatePostgressRepository(dsn string, log zerolog.Logger) UserPostgressRepository {
 	db, err := sql.Open("pgx", dsn)
+	log = log.With().Str("Layer", "Repository").Logger()
 	if err != nil {
-		log.Fatalln("Не удается спарсить конфигурацию:", err)
+		log.Fatal().Msg("Failed to retrieve the configuration\n: " + err.Error())
 	}
 	err = db.Ping() // вот тут будет первое подключение к базе
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal().Msg(err.Error())
 	}
 	db.SetMaxOpenConns(10)
-	return UserPostgressRepository{db}
+	return UserPostgressRepository{db, log}
 }

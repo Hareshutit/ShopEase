@@ -119,19 +119,19 @@ func (e LoginMinLengthErr) Error() string {
 	return fmt.Sprintf("Минимальная длина логина: %d\n", e.length)
 }
 
-type FirstNameMinLengthErr struct {
+type NameMinLengthErr struct {
 	length uint
 }
 
-func (e FirstNameMinLengthErr) Error() string {
+func (e NameMinLengthErr) Error() string {
 	return fmt.Sprintf("Минимальная длина имени: %d\n", e.length)
 }
 
-type FirstNameMaxLengthErr struct {
+type NameMaxLengthErr struct {
 	length uint
 }
 
-func (e FirstNameMaxLengthErr) Error() string {
+func (e NameMaxLengthErr) Error() string {
 	return fmt.Sprintf("Максимальная длина имени: %d\n", e.length)
 }
 

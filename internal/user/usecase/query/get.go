@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/Hareshutit/ShopEase/internal/user/domain"
+	"github.com/rs/zerolog"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type GetUserHandler struct {
 	userRepo domain.RRepository
-	loger    *logrus.Entry
+	loger    *zerolog.Logger
 }
 
 func (h GetUserHandler) Handle(
@@ -23,7 +23,7 @@ func (h GetUserHandler) Handle(
 
 type FindByIdUserHandler struct {
 	userRepo domain.RRepository
-	loger    *logrus.Entry
+	loger    *zerolog.Logger
 }
 
 func (h FindByIdUserHandler) Handle(

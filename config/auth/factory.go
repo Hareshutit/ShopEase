@@ -49,7 +49,11 @@ func CreateKey() KeyValue {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	aprivatekey, _ := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
+	aprivatekey, err := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	return KeyValue{
 		Refresh: rprivatekey,
 		Access:  aprivatekey,

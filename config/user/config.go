@@ -1,10 +1,12 @@
 package config
 
+import "crypto/ecdsa"
+
 type Config struct {
-	Http  HttpConfig
-	Grcp  GrcpConfig
-	Db    DataBaseConfig
-	Valid ValidConfig
+	Http          HttpConfig
+	Grcp          GrcpConfig
+	Db            DataBaseConfig
+	Authorization SecurityConfig
 }
 
 type HttpConfig struct {
@@ -24,42 +26,6 @@ type DataBaseConfig struct {
 	Sslmode      string
 }
 
-type ValidConfig struct {
-	LoginValidate      LoginConfig
-	PasswordValidate   PasswordConfig
-	SecondNameValidate SecondNameConfig
-	FirstNameValidate  FirstNameConfig
-	PatronimicValidate PatronimicConfig
-	AvatarValidate     AvatarConfig
-}
-
-type PasswordConfig struct {
-	SpecialChar map[rune]bool
-	MinLength   uint
-	MaxLength   uint
-}
-
-type LoginConfig struct {
-	MinLength           uint
-	MaxLength           uint
-	NonAcceptableValues map[rune]bool
-}
-
-type SecondNameConfig struct {
-	MinLength uint
-	MaxLength uint
-}
-
-type FirstNameConfig struct {
-	MinLength uint
-	MaxLength uint
-}
-
-type PatronimicConfig struct {
-	MinLength uint
-	MaxLength uint
-}
-
-type AvatarConfig struct {
-	Weigth uint
+type SecurityConfig struct {
+	Verify *ecdsa.PublicKey
 }

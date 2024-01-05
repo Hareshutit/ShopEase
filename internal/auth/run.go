@@ -14,6 +14,7 @@ import (
 	serverGrpc "github.com/Hareshutit/ShopEase/internal/auth/delivery/grpc"
 	"github.com/Hareshutit/ShopEase/internal/auth/repository"
 	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/rs/zerolog"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -26,11 +27,11 @@ import (
 	authmiddlevare "github.com/Hareshutit/ShopEase/pkg/middleware"
 )
 
-func AsyncRunHTTP(e *echo.Echo) error {
+func AsyncRunHTTP(serverH *echo.Echo) error {
 	go func() {
-		err := e.Start(fmt.Sprintf("0.0.0.0:%d", 8082))
+		err := serverH.Start(fmt.Sprintf("0.0.0.0:%d", 8082))
 		if err != nil && err != http.ErrServerClosed {
-			e.Logger.Fatal("shutting down the server")
+			serverH.Logger.Fatal("shutting down the server")
 		}
 	}()
 
@@ -46,12 +47,12 @@ func AsyncRunHTTP(e *echo.Echo) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	return e.Shutdown(ctx)
+	return serverH.Shutdown(ctx)
 }
 
-func AsyncRunGrpc(server *grpc.Server, lis net.Listener) error {
+func AsyncRunGrpc(serverG *grpc.Server, lis net.Listener) error {
 	go func() {
-		err := server.Serve(lis)
+		err := serverG.Serve(lis)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
 			os.Exit(1)
@@ -62,16 +63,10 @@ func AsyncRunGrpc(server *grpc.Server, lis net.Listener) error {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	<-interrupt
 
-	server.GracefulStop()
+	serverG.GracefulStop()
 
 	return nil
 }
-
-const PrivateKey = `-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIN2dALnjdcZaIZg4QuA6Dw+kxiSW502kJfmBN3priIhPoAoGCCqGSM49
-AwEHoUQDQgAE4pPyvrB9ghqkT1Llk0A42lixkugFd/TBdOp6wf69O9Nndnp4+HcR
-s9SlG/8hjB2Hz42v4p3haKWv3uS1C6ahCQ==
------END EC PRIVATE KEY-----`
 
 func Run(cfg config.Config) {
 	ctx := context.Background()
@@ -96,11 +91,11 @@ func Run(cfg config.Config) {
 
 	grpcHandler := serverGrpc.CreateGrpcServer(command, query)
 
-	server := grpc.NewServer()
+	serverG := grpc.NewServer()
 
-	e := echo.New()
+	serverH := echo.New()
 
-	instAuth, err := authmiddlevare.NewInstanceAuthenticator(cfg.KeyValue.Refresh, jwa.ES256, "shopease.com", "auth.shopease.com")
+	instAuth, err := authmiddlevare.NewInstanceAuthenticator(&cfg.KeyValue.Refresh.PublicKey, jwa.ES256, "shopease.com", "auth.shopease.com")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Ошибка загрузки сервера grpc\n: %s", err)
 		os.Exit(1)
@@ -112,20 +107,35 @@ func Run(cfg config.Config) {
 		os.Exit(1)
 	}
 
-	e.Use(middleware.Logger())
-	e.Use(mw...)
+	logger := zerolog.New(os.Stdout)
+	serverH.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogStatus: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			logger.Info().
+				Str("URI", v.URI).
+				Int("status", v.Status).
+				Msg("request")
 
-	v2.RegisterHandlers(e, &serverHandler)
+			return nil
+		},
+	}))
 
-	serverGrpc.RegisterAuthServer(server, &grpcHandler)
+	serverH.Use(mw...)
+
+	v2.RegisterHandlers(serverH, &serverHandler)
+
+	serverGrpc.RegisterAuthServer(serverG, &grpcHandler)
 
 	errs := make(chan error, 2)
+	defer close(errs)
+
 	go func() {
-		errs <- AsyncRunHTTP(e)
+		errs <- AsyncRunHTTP(serverH)
 	}()
 
 	go func() {
-		errs <- AsyncRunGrpc(server, lis)
+		errs <- AsyncRunGrpc(serverG, lis)
 	}()
 	err = <-errs
 

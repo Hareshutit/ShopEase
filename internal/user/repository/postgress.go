@@ -5,12 +5,14 @@ import (
 	"database/sql"
 
 	"github.com/Hareshutit/ShopEase/internal/user/domain"
+	"github.com/rs/zerolog"
 
 	"github.com/google/uuid"
 )
 
 type UserPostgressRepository struct {
 	users *sql.DB
+	log   zerolog.Logger
 }
 
 func (t UserPostgressRepository) AuthGetId(ctx context.Context, id uuid.UUID) (domain.User, error) {

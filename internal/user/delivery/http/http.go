@@ -3,13 +3,12 @@ package v2
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/Hareshutit/ShopEase/internal/user/domain"
 	app "github.com/Hareshutit/ShopEase/internal/user/usecase"
+	"github.com/rs/zerolog"
 
 	"github.com/Hareshutit/ShopEase/pkg/jwt"
 
@@ -35,6 +34,7 @@ func sendUserError(ctx echo.Context, code int, message error) error {
 type HttpServer struct {
 	command app.Commands
 	query   app.Queries
+	log     zerolog.Logger
 }
 
 // Handler отвечает за создание пользователя
@@ -68,7 +68,7 @@ func (a *HttpServer) CreateUser(ctx echo.Context) error {
 		grpc.WithInsecure(),
 	)
 	if err != nil {
-		log.Fatalf("cant connect to grpc")
+		a.log.Error().Msg(err.Error())
 	}
 	defer grcpConn.Close()
 
@@ -76,12 +76,11 @@ func (a *HttpServer) CreateUser(ctx echo.Context) error {
 
 	cr := servGrpc.Id{Id: uuids.String()}
 
-	fmt.Println(cr.GetId())
-
 	wd, err := sessManager.GenerateToken(context.Background(), &cr)
-
 	if err != nil {
-		return sendUserError(ctx, http.StatusBadRequest, errors.New("Ошибка генерации токена"))
+		a.log.Error().Msg(err.Error())
+		return sendUserError(ctx, http.StatusInternalServerError,
+			errors.New("Сервис авторизации временно не доступен"))
 	}
 
 	cookie := new(http.Cookie)
@@ -162,7 +161,6 @@ func (a HttpServer) GetUser(ctx echo.Context) error {
 	if err != nil {
 		return sendUserError(ctx, http.StatusBadRequest, err)
 	}
-	fmt.Println(uuids)
 
 	user, err = a.query.GetUser.Handle(context.Background(), uuids)
 	if err != nil {

@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/Hareshutit/ShopEase/internal/user/domain"
+	"github.com/rs/zerolog"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type DeleteUserHandler struct {
 	userRepo  domain.CUDRepository
 	validator domain.SpecificationManager
-	loger     *logrus.Entry
+	loger     *zerolog.Logger
 }
 
 func (h *DeleteUserHandler) Handle(
@@ -20,5 +20,8 @@ func (h *DeleteUserHandler) Handle(
 	id uuid.UUID,
 ) error {
 	err := h.userRepo.Delete(ctx, id)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }

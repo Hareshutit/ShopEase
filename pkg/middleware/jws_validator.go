@@ -19,13 +19,13 @@ const KeyID = `key-id`
 const PermissionsClaim = "perm"
 
 type InstanceAuthenticator struct {
-	key      *ecdsa.PrivateKey
+	key      *ecdsa.PublicKey
 	alg      jwa.SignatureAlgorithm
 	audience string
 	issuer   string
 }
 
-func NewInstanceAuthenticator(key *ecdsa.PrivateKey, alg jwa.SignatureAlgorithm,
+func NewInstanceAuthenticator(key *ecdsa.PublicKey, alg jwa.SignatureAlgorithm,
 	audience string, issuer string) (*InstanceAuthenticator, error) {
 	return &InstanceAuthenticator{
 		key:      key,
